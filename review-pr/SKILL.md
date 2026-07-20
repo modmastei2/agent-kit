@@ -1,7 +1,7 @@
 ---
 name: review-pr
 description: Orchestrate an AI-assisted review of a Pull Request or Merge Request on GitHub, GitLab, or Bitbucket Cloud. Use when the user asks to review a PR/MR by number, list open PRs awaiting review, re-review a PR after new commits, or post a review comment to a Git provider. All code findings come from the code-review skill.
-argument-hint: "[list | <id>] · [--base <branch>] · [--provider github|gitlab|bitbucket] · [--review-updates] · [--post] · [--dry-run]"
+argument-hint: "[init | list | <id>] · [--base <branch>] · [--provider github|gitlab|bitbucket] · [--review-updates] · [--post] · [--dry-run] · [--force (init)]"
 ---
 
 # Review PR
@@ -17,6 +17,25 @@ Two rules govern everything below:
   the code, never re-word a severity, never add or drop a finding.
 - **The Senior Developer is the final approval authority.** This skill recommends;
   a human decides; the Git provider records the human's approval.
+
+## `init` subcommand
+
+`/review-pr init` creates a gitignored `.review-pr/config.local.json` in the current
+project from a template and adds it to `.gitignore`:
+
+```bash
+node "$SKILL_DIR/scripts/init-config.mjs" [--force]
+```
+
+- If the config already exists, `init` leaves it untouched (it will not overwrite real
+  credentials) and still ensures the `.gitignore` entry is present.
+- `--force` resets the file back to the placeholder template — only on explicit request.
+- After creating it, tell the user to fill in the Bitbucket section **only if** they
+  review Bitbucket PRs; GitHub/GitLab projects need nothing filled in. See
+  [references/config.md](references/config.md).
+
+`init` runs no provider calls and needs no authentication. Everything below is the
+review workflow proper.
 
 ## Workflow
 
@@ -85,9 +104,11 @@ say exactly which command the user should run.
 
 GitHub and GitLab authenticate through their CLIs. **Bitbucket** has no such store, so
 its credentials (and optional defaults like base branch and provider) may live in a
-gitignored per-project `.review-pr/config.local.json` — see
-[references/config.md](references/config.md). The credential is loaded into the shell
-environment without ever being printed; it is never read into context.
+gitignored per-project `.review-pr/config.local.json`, created by
+[`/review-pr init`](#init-subcommand) — see [references/config.md](references/config.md).
+If a Bitbucket review is requested and that file is missing, run `init` first, then stop
+and ask the user to fill it in. The credential is loaded into the shell environment
+without ever being printed; it is never read into context.
 
 Needed scopes: **read repository**, **read pull/merge requests**, **write comments**.
 Never request or use merge, admin, or delete permissions.

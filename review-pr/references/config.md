@@ -46,17 +46,22 @@ Required Bitbucket permissions stay the same: Repositories **Read**, Pull reques
 
 ## Setup
 
-1. Create `.review-pr/config.local.json` from the template above.
-2. Add it to `.gitignore` so the secret is never committed:
+Run the `init` subcommand, which writes the template and the `.gitignore` entry for you:
 
-   ```text
-   .review-pr/config.local.json
-   ```
+```bash
+/review-pr init
+# → node <skill>/scripts/init-config.mjs
+```
 
-3. Fill in the Bitbucket section (skip it entirely for GitHub/GitLab-only projects).
+Then fill in the Bitbucket section (skip it entirely for GitHub/GitLab-only projects).
 
-review-pr must create the file and add the `.gitignore` entry on first use if they are
-missing, and must never overwrite a config that already has real values.
+- `init` never overwrites a config that already has real values; `--force` resets it to
+  the placeholder template.
+- It also runs automatically, non-destructively, the first time a Bitbucket review needs
+  the file — after which review-pr stops and asks you to fill in the credentials.
+
+`scripts/init-config.mjs` is the **only** writer of this file; `scripts/bb-auth.mjs` only
+reads it.
 
 ## How the secret is used
 
