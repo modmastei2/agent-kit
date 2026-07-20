@@ -83,6 +83,12 @@ the Git credential manager, or documented environment variables. Do not run an
 interactive login flow on the user's behalf — if authentication is missing, stop and
 say exactly which command the user should run.
 
+GitHub and GitLab authenticate through their CLIs. **Bitbucket** has no such store, so
+its credentials (and optional defaults like base branch and provider) may live in a
+gitignored per-project `.review-pr/config.local.json` — see
+[references/config.md](references/config.md). The credential is loaded into the shell
+environment without ever being printed; it is never read into context.
+
 Needed scopes: **read repository**, **read pull/merge requests**, **write comments**.
 Never request or use merge, admin, or delete permissions.
 

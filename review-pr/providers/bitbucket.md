@@ -25,39 +25,54 @@ git remote get-url origin
 
 ## detect
 
-Host is `bitbucket.org`. Confirm with an authenticated read before proceeding:
+Host is `bitbucket.org`. Confirm with an authenticated read before proceeding (run the
+`bb-auth.mjs` step below first, so `$BB_AUTH` is set):
 
 ```bash
-curl -sS -f -u "$BB_USER:$BB_APP_PASSWORD" \
+curl -sS -f -H "Authorization: $BB_AUTH" \
   "https://api.bitbucket.org/2.0/repositories/$WORKSPACE/$REPO"
 ```
 
 ## authenticate
 
-Bitbucket Cloud accepts an app password (`user:app_password`) or a workspace/repository
-access token (`Authorization: Bearer`). Use whichever already exists:
+Bitbucket Cloud accepts an app password (username + app password, sent as HTTP Basic) or
+a workspace/repository **access token** (sent as `Authorization: Bearer`). Credentials
+come from, in order — see [../references/config.md](../references/config.md):
 
-```text
-BITBUCKET_USERNAME + BITBUCKET_APP_PASSWORD
-BITBUCKET_TOKEN
-the Git credential manager entry for bitbucket.org
-```
+1. `.review-pr/config.local.json` → `bitbucket.token`, else `bitbucket.username` +
+   `bitbucket.appPassword`
+2. environment variables: `BITBUCKET_TOKEN`, or `BITBUCKET_USERNAME` +
+   `BITBUCKET_APP_PASSWORD`
+3. the `bitbucket.org` entry in the Git credential manager / `~/.netrc`
 
 Required permissions: **Repositories: Read** and **Pull requests: Write** (write is what
 grants comment creation). Do not request Admin, Webhooks, or merge permissions.
 
-If no credential is available, stop and tell the user to create an app password with
-those two permissions. **Never echo the username:password pair, the token, the `-u`
-argument, or a `.netrc`/credential file.** When showing a command in output, mask it as
-`-u "$BB_USER:$BB_APP_PASSWORD"`.
+**Load the credential into the environment without printing it.** The helper reads the
+config, prefers a token over an app password, and emits only an `export BB_AUTH=…` line
+that `eval` consumes silently:
 
-Prefer `curl --netrc` or an env var over an inline literal so no secret ever reaches the
-transcript.
+```bash
+eval "$(node "$SKILL_DIR/scripts/bb-auth.mjs")"   # sets BB_AUTH; nothing is printed
+```
+
+`$SKILL_DIR` is this skill's directory. Every Bitbucket request below then sends
+`-H "Authorization: $BB_AUTH"` — there is no `-u user:password` on the command line, so
+the secret never appears in a command echo.
+
+When credentials come from the environment instead of the config file, set `BB_AUTH`
+yourself the same way — a `Bearer <token>` or a `Basic <base64(user:app_password)>`
+value — rather than passing `-u`.
+
+If no credential resolves, **stop** and tell the user to fill in
+`.review-pr/config.local.json` (creating it from the template if missing) or set the
+environment variables. **Never echo the token, the app password, the header value, or a
+credential file** — not in output, not in a command, not in a PR comment.
 
 ## listOpen
 
 ```bash
-curl -sS -f -u "$BB_USER:$BB_APP_PASSWORD" -G \
+curl -sS -f -H "Authorization: $BB_AUTH" -G \
   "https://api.bitbucket.org/2.0/repositories/$WORKSPACE/$REPO/pullrequests" \
   --data-urlencode 'state=OPEN' \
   --data-urlencode "q=destination.branch.name=\"$BASE\"" \
@@ -89,7 +104,7 @@ git ls-remote --heads origin dev
 ## get
 
 ```bash
-curl -sS -f -u "$BB_USER:$BB_APP_PASSWORD" \
+curl -sS -f -H "Authorization: $BB_AUTH" \
   "https://api.bitbucket.org/2.0/repositories/$WORKSPACE/$REPO/pullrequests/$ID"
 ```
 
@@ -143,7 +158,7 @@ git diff "$BASE_SHA...$HEAD_SHA"
 Or from the API when local fetch is unavailable:
 
 ```bash
-curl -sS -f -u "$BB_USER:$BB_APP_PASSWORD" -L \
+curl -sS -f -H "Authorization: $BB_AUTH" -L \
   "https://api.bitbucket.org/2.0/repositories/$WORKSPACE/$REPO/pullrequests/$ID/diff"
 ```
 
@@ -152,7 +167,7 @@ curl -sS -f -u "$BB_USER:$BB_APP_PASSWORD" -L \
 ## getChangedFiles
 
 ```bash
-curl -sS -f -u "$BB_USER:$BB_APP_PASSWORD" \
+curl -sS -f -H "Authorization: $BB_AUTH" \
   "https://api.bitbucket.org/2.0/repositories/$WORKSPACE/$REPO/pullrequests/$ID/diffstat?pagelen=100"
 ```
 
@@ -162,7 +177,7 @@ result is paginated — a truncated file list silently narrows the review.
 ## getComments
 
 ```bash
-curl -sS -f -u "$BB_USER:$BB_APP_PASSWORD" \
+curl -sS -f -H "Authorization: $BB_AUTH" \
   "https://api.bitbucket.org/2.0/repositories/$WORKSPACE/$REPO/pullrequests/$ID/comments?pagelen=100"
 ```
 
@@ -172,7 +187,7 @@ Skip entries with `deleted: true`. Scan `content.raw` for the
 ## postComment
 
 ```bash
-curl -sS -f -u "$BB_USER:$BB_APP_PASSWORD" \
+curl -sS -f -H "Authorization: $BB_AUTH" \
   -X POST \
   -H 'Content-Type: application/json' \
   --data @"$PAYLOAD_FILE" \
@@ -186,7 +201,7 @@ in findings will corrupt the payload.
 To update a previous AI review comment instead of duplicating:
 
 ```bash
-curl -sS -f -u "$BB_USER:$BB_APP_PASSWORD" \
+curl -sS -f -H "Authorization: $BB_AUTH" \
   -X PUT \
   -H 'Content-Type: application/json' \
   --data @"$PAYLOAD_FILE" \
