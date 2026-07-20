@@ -1,0 +1,267 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/schemas/review-result.schema.json",
+  "title": "Code Review Result",
+  "description": "Provider-agnostic structured output of the code-review skill.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "verdict",
+    "summary",
+    "reviewTarget",
+    "repositoryContext",
+    "checks",
+    "findings",
+    "limitations",
+    "reviewedAt"
+  ],
+  "properties": {
+    "verdict": {
+      "description": "Derived from findings: any blocking -> changes_required; warnings only -> pass_with_warnings; none -> pass; review aborted -> unable_to_complete.",
+      "enum": ["pass", "pass_with_warnings", "changes_required", "unable_to_complete"]
+    },
+    "summary": {
+      "type": "string",
+      "minLength": 1,
+      "description": "One to three sentences stating what was reviewed and the outcome."
+    },
+    "reviewTarget": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type"],
+      "properties": {
+        "type": {
+          "enum": ["git_diff", "commit_range", "working_tree", "staged", "files", "path"]
+        },
+        "base": {
+          "type": ["string", "null"],
+          "description": "Base ref or commit sha, when applicable."
+        },
+        "head": {
+          "type": ["string", "null"],
+          "description": "Head ref or commit sha, when applicable."
+        },
+        "files": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Repository-relative paths, required for type=files."
+        },
+        "path": {
+          "type": ["string", "null"],
+          "description": "Repository-relative directory, required for type=path."
+        },
+        "inferred": {
+          "type": "boolean",
+          "description": "True when no explicit target was supplied and the target was inferred from repository state.",
+          "default": false
+        }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "type": { "const": "files" } }, "required": ["type"] },
+          "then": { "required": ["files"], "properties": { "files": { "minItems": 1 } } }
+        },
+        {
+          "if": { "properties": { "type": { "const": "path" } }, "required": ["type"] },
+          "then": { "required": ["path"], "properties": { "path": { "type": "string" } } }
+        },
+        {
+          "if": {
+            "properties": { "type": { "enum": ["git_diff", "commit_range"] } },
+            "required": ["type"]
+          },
+          "then": {
+            "required": ["base", "head"],
+            "properties": {
+              "base": { "type": "string", "minLength": 1 },
+              "head": { "type": "string", "minLength": 1 }
+            }
+          }
+        }
+      ]
+    },
+    "repositoryContext": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["instructionsRead", "detectedStacks"],
+      "properties": {
+        "instructionsRead": {
+          "type": "array",
+          "description": "Repository-relative paths of instruction files actually read. Do not list files that were skipped.",
+          "items": { "type": "string" }
+        },
+        "detectedStacks": {
+          "type": "array",
+          "description": "Free-form stack labels detected from repository files and changed paths, e.g. 'ASP.NET Core', 'Angular', 'Go', 'SQL', 'Docker'.",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "checks": {
+      "type": "array",
+      "description": "Deterministic checks considered. A status of 'passed' means the command was executed and exited successfully.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "status"],
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "description": "The command as invoked, e.g. 'dotnet test'."
+          },
+          "status": {
+            "enum": ["passed", "failed", "skipped", "not_available"]
+          },
+          "details": {
+            "type": ["string", "null"],
+            "description": "Relevant output excerpt or the reason for skipped/not_available."
+          }
+        }
+      }
+    },
+    "findings": {
+      "type": "array",
+      "description": "Ordered most severe first. Empty is a valid result.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "severity", "category", "title", "message", "impact", "suggestion"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^CR-[0-9]{3,}$",
+            "description": "Sequential identifier: CR-001, CR-002, ..."
+          },
+          "severity": {
+            "enum": ["blocking", "warning", "suggestion"]
+          },
+          "category": {
+            "enum": [
+              "correctness",
+              "security",
+              "data_integrity",
+              "breaking_change",
+              "architecture",
+              "error_handling",
+              "concurrency",
+              "testing",
+              "performance",
+              "maintainability",
+              "style"
+            ]
+          },
+          "file": {
+            "type": ["string", "null"],
+            "description": "Repository-relative path. Null only when the finding is not tied to a file."
+          },
+          "line": {
+            "type": ["integer", "null"],
+            "minimum": 1
+          },
+          "endLine": {
+            "type": ["integer", "null"],
+            "minimum": 1
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Short noun phrase naming the concrete problem."
+          },
+          "message": {
+            "type": "string",
+            "minLength": 1,
+            "description": "What is wrong, with the evidence that establishes it."
+          },
+          "impact": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Why it matters: the concrete consequence."
+          },
+          "suggestion": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Practical remediation."
+          },
+          "rule": {
+            "type": ["string", "null"],
+            "description": "Applicable repository rule, e.g. 'AGENTS.md#layering'. Null when only general policy applies."
+          },
+          "confidence": {
+            "enum": ["verified", "likely", "unverified"],
+            "description": "Optional. 'verified' means confirmed by reading the surrounding code or by a failing check."
+          }
+        }
+      }
+    },
+    "limitations": {
+      "type": "array",
+      "description": "Anything that prevented full review: checks not run, files unreadable, missing infrastructure. Required to be non-empty when verdict is unable_to_complete.",
+      "items": { "type": "string" }
+    },
+    "reviewedAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO-8601 timestamp."
+    },
+    "report": {
+      "type": "string",
+      "description": "Optional Markdown rendering of this result, for direct display to a developer."
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": { "verdict": { "const": "unable_to_complete" } },
+        "required": ["verdict"]
+      },
+      "then": { "properties": { "limitations": { "minItems": 1 } } }
+    },
+    {
+      "if": {
+        "properties": { "verdict": { "const": "pass" } },
+        "required": ["verdict"]
+      },
+      "then": {
+        "properties": {
+          "findings": {
+            "items": {
+              "properties": { "severity": { "const": "suggestion" } }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": { "verdict": { "const": "pass_with_warnings" } },
+        "required": ["verdict"]
+      },
+      "then": {
+        "properties": {
+          "findings": {
+            "items": {
+              "properties": { "severity": { "enum": ["warning", "suggestion"] } }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": { "verdict": { "const": "changes_required" } },
+        "required": ["verdict"]
+      },
+      "then": {
+        "properties": {
+          "findings": {
+            "contains": {
+              "properties": { "severity": { "const": "blocking" } },
+              "required": ["severity"]
+            }
+          }
+        }
+      }
+    }
+  ]
+}
