@@ -18,7 +18,10 @@ a brand-new one.
 
 Look at the current repo to understand its structure and tech stack.
 
-- has any `AGENTS.md` or `CLAUDE.md` at the repo
+- has any `AGENTS.md` or `CLAUDE.md` at the repo — record **every** location found, not
+  just the root. Their presence means this is a re-run, which puts step 4 in update mode
+  instead of fresh-write mode; carry the finding forward rather than noting it and
+  moving on
 - has an `.editorconfig` at the repo root already
 - check for stack signals per top-level folder (in case the repo is a mono-repo):
 
@@ -68,6 +71,10 @@ Ask the user which system prompt to use. User can choose from the following opti
 - **Both**: Use both files to create a combined system prompt for the agent.
 
 Rules for choosing the system prompt:
+- If step 1 found existing system-prompt file(s), lead with what's already there as the
+  recommended answer (`CLAUDE.md` alone → recommend `CLAUDE.md`; both present →
+  recommend "Both"). Switching filenames on a re-run orphans the old file rather than
+  replacing it — if the user does want to switch, confirm what happens to the old one.
 - If the user selected "Both," write `AGENTS.md` first, then copy the content verbatim to `CLAUDE.md` — the two files must stay identical (aside from the `{{FILE_NAME}}` substitution in step 4). Otherwise, create only the one file the user chose.
 - The system prompt works like a standing instruction set for the agent — write it clear, concise, and actionable, not descriptive prose.
 
@@ -85,6 +92,44 @@ Section B — do not re-detect or re-ask either here.
   same filename chosen in Section B — a mono-repo doesn't mix filenames across sub-apps.
 
 ### 4. Resolve the template and write real content
+
+**Fresh write vs. update** — decide this per output location planned in step 3, using
+what step 1 found on disk. A mono-repo can be a fresh write in one sub-app and an update
+in another; a "Both" pair (`CLAUDE.md` + `AGENTS.md`) where only one file exists is an
+update of that file plus a fresh write of its twin, and the two must end up identical
+again.
+
+- **No file at that location** → fresh write. Resolve the template as described below.
+- **File already exists** → update it in place. Never resolve the template from scratch
+  and write it over the top: on a re-run, the file on disk is the source of truth for
+  everything the user has customised, and the template is only the source of
+  skill-authored content that is new or has changed since the last run.
+
+Update procedure:
+
+1. Read the existing file and map its `##`/`###` headings onto the canonical skeleton below.
+2. Classify every section, then act:
+   - **In the skeleton, absent on disk** → resolve it from the template and insert it at
+     its skeleton position. This is how a repo picks up a section added to this skill
+     after its last run.
+   - **Present and still matching what this skill would have produced** → replace with
+     the newly resolved content, so wording fixes to a shared fragment actually land.
+   - **Present but diverged** — the user edited it, extended it, or deliberately trimmed
+     bullets → keep their version. Do not restore template wording and do not re-add
+     bullets they removed. If the skill has genuinely new content for that section, show
+     it as a proposed addition and let the user decide.
+   - **Present, not in the skeleton** → user-authored section; leave it untouched. An
+     unrecognised section is a deliberate addition, not drift to clean up.
+3. `## Tech Stack`, `## Architecture`, `## Project Structure`, and every table of real
+   folder/feature/class names describe *this* repo, not the template. Re-survey the repo
+   and correct them only where the repo itself has changed — never overwrite them with
+   the template's defaults.
+4. Before writing, show the user a short summary: sections to add, sections to update,
+   sections left alone. Confirm, then write.
+
+A section that exists in the skeleton but not in the delivered file is a user decision as
+often as it is a gap — ask before adding it back, the same way step 5 asks before
+touching an existing `.editorconfig`.
 
 **Resolve `{{FILE_NAME}}`** — every template's H1 header is `# {{FILE_NAME}}`. Substitute
 the literal filename chosen in step 2 Section B (`CLAUDE.md` or `AGENTS.md`). If the user
