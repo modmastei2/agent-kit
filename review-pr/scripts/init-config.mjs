@@ -20,6 +20,7 @@ const CONFIG_REL_PATH = `${CONFIG_DIR}/${CONFIG_FILE}`;
 const TEMPLATE = {
   defaultProvider: null,
   defaultBaseBranch: 'dev',
+  reportLanguage: null,
   bitbucket: {
     username: 'your-bitbucket-username',
     appPassword: 'YOUR_APP_PASSWORD_HERE',

@@ -87,6 +87,11 @@
       "default": false,
       "description": "Draft/WIP status. Bitbucket Cloud has no draft concept; use false there."
     },
+    "reportLanguage": {
+      "enum": ["en", "th"],
+      "default": "en",
+      "description": "Language for the prose of the review and the posted comment. Passed through to code-review. Enum values in the review result stay English regardless."
+    },
     "reviewMode": {
       "enum": ["full", "incremental"],
       "description": "'full' reviews baseSha...headSha. 'incremental' reviews previousReviewedSha...headSha and re-checks unresolved blocking findings."

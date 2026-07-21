@@ -16,6 +16,26 @@
     "reviewedAt"
   ],
   "properties": {
+    "reportLanguage": {
+      "enum": ["en", "th"],
+      "default": "en",
+      "description": "Language for prose fields and the Markdown report. Enum values elsewhere in this schema always stay English regardless of this setting."
+    },
+    "scope": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Present when fewer than all changed files were reviewed. Omit when coverage was complete.",
+      "required": ["reviewedFileCount", "changedFileCount"],
+      "properties": {
+        "reviewedFileCount": { "type": "integer", "minimum": 0 },
+        "changedFileCount": { "type": "integer", "minimum": 0 },
+        "exclusions": {
+          "type": "array",
+          "description": "Path globs excluded, with the reason, e.g. 'docs/** — excluded at requester's direction'.",
+          "items": { "type": "string" }
+        }
+      }
+    },
     "verdict": {
       "description": "Derived from findings: any blocking -> changes_required; warnings only -> pass_with_warnings; none -> pass; review aborted -> unable_to_complete.",
       "enum": ["pass", "pass_with_warnings", "changes_required", "unable_to_complete"]
@@ -166,22 +186,31 @@
           "title": {
             "type": "string",
             "minLength": 1,
-            "description": "Short noun phrase naming the concrete problem."
+            "maxLength": 120,
+            "description": "Short noun phrase naming the concrete problem. One line."
           },
           "message": {
             "type": "string",
             "minLength": 1,
-            "description": "What is wrong, with the evidence that establishes it."
+            "maxLength": 300,
+            "description": "What is wrong. At most two sentences. Never describes how the problem was found — that belongs in evidence."
           },
           "impact": {
             "type": "string",
             "minLength": 1,
-            "description": "Why it matters: the concrete consequence."
+            "maxLength": 300,
+            "description": "The concrete consequence if this ships. At most two sentences."
           },
           "suggestion": {
             "type": "string",
             "minLength": 1,
-            "description": "Practical remediation."
+            "maxLength": 400,
+            "description": "Practical remediation, specific enough to act on. At most three sentences."
+          },
+          "evidence": {
+            "type": "string",
+            "maxLength": 300,
+            "description": "Optional proof of the claim: a non-obvious command, a byte-level check, a count across files. At most two sentences. Omit when the cited line speaks for itself."
           },
           "rule": {
             "type": ["string", "null"],

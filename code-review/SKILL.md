@@ -1,8 +1,7 @@
 ---
 name: code-review
 description: Review source code changes independently of any Git hosting provider. Use when the user asks to review a pull request, working-tree changes, staged changes, a commit range, specific files, or a directory, or when another skill (e.g. review-pr) needs a structured review result.
-disable-model-invocation: true
-argument-hint: "[--working-tree] · [--staged] · [--diff <base>...<head>] · [--commits <a>..<b>] · [--files <path> ...] · [--path <dir>] · [--input <file.json>]"
+argument-hint: "[--working-tree] · [--staged] · [--diff <base>...<head>] · [--commits <a>..<b>] · [--files <path> ...] · [--path <dir>] · [--input <file.json>] · [--lang en|th]"
 ---
 
 # Code Review
@@ -26,6 +25,34 @@ policies in this skill.
 5. **[Run deterministic checks](#5-run-deterministic-checks)**
 6. **[Review against the policies](#6-review-against-the-policies)**
 7. **[Emit the result](#7-emit-the-result)**
+
+Settle the [report language](#report-language) at the start, together with step 1 —
+not after the review is written.
+
+## Report language
+
+The Markdown report is written in the caller's language. Resolve it in this order:
+
+1. `--lang en` or `--lang th` was passed → use it.
+2. `--input` supplies `reportLanguage` → use it. **Never prompt in an orchestrated
+   run**; if the field is absent, default to English and note the assumption.
+3. Interactive invocation with no flag → **ask the user once, before starting the
+   review**: English or Thai. Ask together with any target clarification so there is
+   only one interruption.
+
+Record the choice in `reportLanguage` (`"en"` or `"th"`).
+
+What the language setting does **not** change:
+
+- The JSON is a machine contract. `verdict`, `severity`, `category`, `status`, and
+  every other enum stay in English exactly as the schema defines them.
+- Identifiers, file paths, commands, log excerpts, and quoted code stay verbatim.
+- Rule citations keep the source's own wording (`AGENTS.md#layering`).
+
+Only prose is translated: `summary`, `title`, `message`, `impact`, `suggestion`,
+`evidence`, `limitations`, and the Markdown report. Write natural Thai, not a literal
+translation — keep technical terms (null, deadlock, migration, race condition) in
+English rather than forcing an unnatural Thai equivalent.
 
 ## 1. Resolve the review target
 
@@ -75,8 +102,12 @@ Read selectively — only documents covering the affected modules. Skip a 400-li
 `README.md` about deployment when reviewing a UI component. List everything you
 actually read in `repositoryContext.instructionsRead`; do not list files you skipped.
 
-When a repository rule is marked mandatory ("must", "never", "always"), a violation
-is **blocking** and the finding's `rule` field cites it (e.g. `AGENTS.md#layering`).
+When a repository rule is marked mandatory ("must", "never", "always"), cite it in the
+finding's `rule` field (e.g. `AGENTS.md#layering`). A violation is **blocking** when it
+also carries real consequence — wrong behavior, a security or data risk, or a broken
+build. A violation of a rule that is purely convention (formatting, file layout,
+naming) is a **warning**, however emphatically the rule is worded. Severity comes from
+impact, not from the rule's tone of voice.
 
 ## 3. Detect the stack
 
@@ -144,8 +175,8 @@ problems are out of scope unless the new code depends on or worsens them.
 
 - `blocking` — incorrect behavior, security vulnerability, data corruption risk,
   severe architecture violation, missing required validation, unhandled breaking
-  change, build/test failure caused by the change, or violation of a mandatory
-  repository rule. Should normally prevent merge.
+  change, or a build/test failure caused by the change. Should normally prevent merge.
+  A mandatory-rule violation qualifies only when it produces one of these effects.
 - `warning` — a meaningful issue to consider before merge; may not always block.
 - `suggestion` — non-blocking improvement.
 
@@ -158,11 +189,49 @@ file and line when possible, cite the project rule when one applies, and give a
 practical remediation. No vague statements, no praise, no restating one root cause
 as several findings — merge them into one with the strongest evidence.
 
-Bad: `This code could be improved.`
+### Write it short, and lead with the consequence
 
-Good: ``` `PaymentController.cs:42` accesses `ApplicationDbContext` directly, which
-violates the repository rule requiring persistence access to stay in services. Move
-this query into `IPaymentService` and keep the controller to request orchestration. ```
+The reader wants **what breaks → why it matters → how to fix it**. How you proved it
+comes last, or not at all. Never open a finding with your investigation method.
+
+Hard limits — a finding that exceeds them is not more thorough, it is unread:
+
+| Field | Limit | Contains |
+| --- | --- | --- |
+| `title` | one line | the defect as a noun phrase |
+| `message` | **≤2 sentences** | what is wrong. Not how you found out. |
+| `impact` | **≤2 sentences** | the concrete consequence if it ships |
+| `suggestion` | **≤3 sentences** | the fix, specific enough to act on |
+| `evidence` | **≤2 sentences**, optional | the proof, only when non-obvious |
+
+Verification discipline is unchanged — keep verifying exactly as thoroughly. `evidence`
+exists so that the proof stays available without crowding out the point. Use it only
+when the reader would otherwise doubt the claim (a non-obvious command, a byte-level
+check, a count across many files). If the cited line speaks for itself, omit it.
+
+Do not list every file you inspected. Name one or two representative ones and give the
+count: "every source file at the base commit is CRLF (checked all 120)".
+
+Bad — buries the point under methodology:
+
+> Verified against raw blob bytes with `git cat-file blob` (not `git show`, which can
+> apply EOL conversion): every pre-existing source file at the base commit is 100%
+> CRLF (`OrderService.cs` 240/240, `PricingCalculator.cs` 360/360,
+> `ConfigLoader.cs` 26/26), and the files this PR adds are also committed
+> CRLF, and there is no `.gitattributes`, so the rule is violated by the very commit
+> that introduces it, and …
+
+Good — same facts, ordered for the reader:
+
+> **message:** This PR adds `.editorconfig` with `end_of_line = lf`, but the whole
+> repository is committed CRLF and there is no `.gitattributes` to normalize it.
+> **impact:** The first `dotnet format` run rewrites every file, producing whole-file
+> diffs unrelated to the change and destroying `git blame` attribution.
+> **suggestion:** Either add `.gitattributes` (`* text=auto eol=lf`) and normalize in
+> one isolated commit, or set `end_of_line = crlf` to match reality — the lower-risk
+> option if there is no active move to LF.
+> **evidence:** Checked with `git cat-file blob` rather than `git show`, which converts
+> EOL; all files at the base commit and every file this PR adds are CRLF.
 
 Say nothing about subjective preference unless it materially affects clarity,
 consistency, safety, or maintainability. An empty findings list is a valid, good
@@ -191,20 +260,27 @@ Compute it from the findings array. Never state a verdict the findings contradic
 
 ### Markdown report
 
+Written in [the resolved report language](#report-language).
+
 ```markdown
 ## Code Review
 
 **Verdict:** Changes required
 **Reviewed range:** `abc123..def456`
+**Scope:** 24 of 31 changed files — `docs/**` excluded at the requester's direction
 
 ### Blocking
 
 1. **Possible null dereference**
-   `src/PaymentService.cs:84`
+   `src/PaymentService.cs:84` · violates `AGENTS.md#null-handling`
 
-   Explanation of the issue.
+   The lookup result can be null before its `Id` property is accessed.
+   A missing payment record will throw at runtime instead of returning 404.
 
-   **Recommended change:** Practical remediation.
+   **Recommended change:** Validate the result and return the repository-standard
+   not-found response.
+
+   <sub>Checked all three call sites; none guard the result.</sub>
 
 ### Warnings
 
@@ -220,8 +296,16 @@ Compute it from the findings array. Never state a verdict the findings contradic
 - Integration tests were not executed because the required database was unavailable.
 ```
 
-Omit empty sections. Return the report to the caller or user — **never post it
-anywhere.**
+Rendering rules:
+
+- `message` and `impact` are **separate sentences in one paragraph**, in that order —
+  never merged into a wall of text.
+- `evidence` renders last, in `<sub>` tags, and is omitted when absent.
+- Include the `Scope` line whenever fewer than all changed files were reviewed; omit it
+  when coverage was complete.
+- Omit empty sections.
+
+Return the report to the caller or user — **never post it anywhere.**
 
 ## Boundaries
 

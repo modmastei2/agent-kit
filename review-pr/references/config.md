@@ -23,6 +23,7 @@ GitHub and GitLab via their CLIs, and for Bitbucket via environment variables.
 {
   "defaultProvider": null,
   "defaultBaseBranch": "dev",
+  "reportLanguage": null,
   "bitbucket": {
     "username": "your-bitbucket-username",
     "appPassword": "YOUR_APP_PASSWORD_HERE",
@@ -35,6 +36,9 @@ GitHub and GitLab via their CLIs, and for Bitbucket via environment variables.
   A `--provider` argument overrides it.
 - `defaultBaseBranch` — used when listing PRs if `--base` is not given and the branch
   exists. `null` falls back to `dev`-if-present, else the repo default branch.
+- `reportLanguage` — `"en"` or `"th"`, the language of the posted comment. Set it once
+  for a team that always reviews in one language and the skill stops asking. `null`
+  means ask on each run; a `--lang` argument overrides it either way.
 - `bitbucket.token` — a workspace/repository **access token**. When set, it is used as
   `Authorization: Bearer <token>` and `username`/`appPassword` are ignored.
 - `bitbucket.username` + `bitbucket.appPassword` — an **app password** pair, used as

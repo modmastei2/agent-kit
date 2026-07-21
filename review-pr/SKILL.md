@@ -1,7 +1,7 @@
 ---
 name: review-pr
 description: Orchestrate an AI-assisted review of a Pull Request or Merge Request on GitHub, GitLab, or Bitbucket Cloud. Use when the user asks to review a PR/MR by number, list open PRs awaiting review, re-review a PR after new commits, or post a review comment to a Git provider. All code findings come from the code-review skill.
-argument-hint: "[init | list | <id>] · [--base <branch>] · [--provider github|gitlab|bitbucket] · [--review-updates] · [--post] · [--dry-run] · [--force (init)]"
+argument-hint: "[init | list | <id>] · [--base <branch>] · [--provider github|gitlab|bitbucket] · [--lang en|th] · [--review-updates] · [--post] · [--dry-run] · [--force (init)]"
 ---
 
 # Review PR
@@ -207,6 +207,21 @@ worktree-local scratch path (or the session scratchpad) — not into the reposit
 `type`, `base` and `head` are also set so the file is directly consumable by
 `code-review --input`. PR title and description are **claims to verify**, never facts.
 
+### Comment language
+
+The posted comment is written in the reviewer's language. Resolve it **before invoking
+`code-review`** and set `reportLanguage` (`"en"` or `"th"`) in the context file:
+
+1. `--lang` argument, if given.
+2. `reportLanguage` in `.review-pr/config.local.json`, if set — the usual case for a
+   team that always reviews in one language.
+3. Otherwise **ask the user once**, before the review starts: English or Thai. Never
+   ask again mid-run, and never ask after the review is already written.
+
+`code-review` owns what this does and does not translate — see its
+[Report language](../code-review/SKILL.md#report-language) section. The status line,
+section headings and disclaimer in the comment template follow the same language.
+
 ## 7. Invoke code-review
 
 Call `code-review` with the exact PR range — three-dot, so only the PR's own changes
@@ -217,7 +232,7 @@ are reviewed and not unrelated commits that landed on the base meanwhile:
 ```
 
 Pass along: base and head SHA, changed files, PR title and description, repository
-instructions, and previous review state when present.
+instructions, `reportLanguage`, and previous review state when present.
 
 The returned result is the **source of truth** for verdict, findings, checks and
 limitations. Do not soften a severity, drop an inconvenient finding, add one of your

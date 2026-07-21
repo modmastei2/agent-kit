@@ -66,6 +66,22 @@ hardening advice with no reachable path is a `suggestion`, not `blocking`.
 - A new dependency that is unmaintained, typosquat-adjacent, or duplicates something
   already in the repo — `warning`, ask for justification.
 
+## Committed secrets are the one exception to diff-awareness
+
+Everywhere else, a pre-existing problem outside the diff is out of scope. Committed
+credentials are not: a live secret in the repository is exploitable today, and burying
+it in `limitations` where nobody reads it is a worse outcome than a slightly
+out-of-scope finding.
+
+When you encounter a committed credential while reviewing — even in a file this change
+never touches — report it as a finding with `category: "security"`. Set the severity to
+`warning`, state plainly in the `message` that it is pre-existing and not introduced by
+this change, and say it needs rotation, not just deletion. Being pre-existing, it must
+**not** drive the verdict to `changes_required`; the author cannot fix someone else's
+committed secret as a condition of merging their own work.
+
+If the change *introduces* the secret, none of the above applies — that is `blocking`.
+
 ## Reporting
 
 State the untrusted source, the sink, and the impact. Do not include a working
