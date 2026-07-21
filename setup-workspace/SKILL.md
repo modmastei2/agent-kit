@@ -147,6 +147,7 @@ skeleton so output stays consistent across stacks:
     ### Unit Test Rules
     ### Rules
 ## Security Rules
+## Commit Message
 ## Definition of Done
 ```
 

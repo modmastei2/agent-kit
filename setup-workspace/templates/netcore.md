@@ -243,6 +243,10 @@ Unit test required for:
 
 <!-- resolve: _shared/security-rules.md (Plain + .Net Core) -->
 
+## Commit Message
+
+<!-- resolve: _shared/commit-message.md (Plain) -->
+
 ## Definition of Done
 
 <!-- resolve: _shared/definition-of-done.md (Plain) -->

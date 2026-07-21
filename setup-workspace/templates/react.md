@@ -219,6 +219,10 @@ To test logic embedded in a component, extract it into a pure function (e.g. `/u
 
 <!-- resolve: _shared/security-rules.md (Plain) -->
 
+## Commit Message
+
+<!-- resolve: _shared/commit-message.md (Plain) -->
+
 ## Definition of Done
 
 <!-- resolve: _shared/definition-of-done.md (Plain) -->
