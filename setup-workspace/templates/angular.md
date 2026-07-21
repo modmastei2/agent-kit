@@ -101,7 +101,11 @@ angular.json
 
 ### UI & Design System
 
-- Tailwind utility classes only — no custom CSS files
+- Tailwind utility classes only — no hand-written CSS rules, no inline `style`
+- Design tokens are declared once (v4: `@theme {}`; v3: `theme.extend`) so Tailwind
+  generates utilities for them, then consumed as utilities: `text-ink`, `hover:bg-ink`,
+  `rounded-card`. Never reach for the raw variable — no `var(--color-ink)`, no
+  `text-[var(--color-ink)]`. A token with no utility is a token in the wrong place
 - Every interactive element needs `hover`, `focus`, `active`, `disabled` state
 - Clickable element add class `cursor-pointer` and `cursor-not-allowed` when disabled
 - Forms must be scannable and mobile-friendly
