@@ -9,26 +9,28 @@ import {
 import { buildMarker } from './state.mjs';
 import { fingerprint } from './compare.mjs';
 
+// Findings are `####` headings, so the resolved/unresolved split folds into the
+// `###` line rather than nesting another level under it.
 function severityBlock(heading, findings, lang, split) {
   if (!findings.length) return [];
-  const out = [`### ${heading}`, ''];
 
   if (!split) {
+    const out = [`### ${heading}`, ''];
     findings.forEach((finding, index) => out.push(renderFinding(finding, index, lang), ''));
     return out;
   }
 
   const t = strings(lang);
-  const unresolved = findings.filter((f) => f.__group === 'stillUnresolved');
-  const introduced = findings.filter((f) => f.__group !== 'stillUnresolved');
+  const out = [];
+  const groups = [
+    [t.sections.stillUnresolved, findings.filter((f) => f.__group === 'stillUnresolved')],
+    [t.sections.newlyIntroduced, findings.filter((f) => f.__group !== 'stillUnresolved')],
+  ];
 
-  if (unresolved.length) {
-    out.push(`#### ${t.sections.stillUnresolved}`, '');
-    unresolved.forEach((finding, index) => out.push(renderFinding(finding, index, lang), ''));
-  }
-  if (introduced.length) {
-    out.push(`#### ${t.sections.newlyIntroduced}`, '');
-    introduced.forEach((finding, index) => out.push(renderFinding(finding, index, lang), ''));
+  for (const [label, group] of groups) {
+    if (!group.length) continue;
+    out.push(`### ${heading} · ${label}`, '');
+    group.forEach((finding, index) => out.push(renderFinding(finding, index, lang), ''));
   }
   return out;
 }

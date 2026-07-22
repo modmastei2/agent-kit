@@ -24,34 +24,36 @@ the verdict from the findings and refuses to render if the file disagrees.
 
 ### Blocking
 
-1. **Possible null dereference**  
-   `src/PaymentService.cs:84` · violates `AGENTS.md#null-handling`
+#### 1. Possible null dereference
 
-   The lookup result can be null before its `Id` property is accessed.
-   A missing payment record will throw at runtime instead of returning 404.
+`src/PaymentService.cs:84` · violates `AGENTS.md#null-handling`
 
-   **Recommended change:** Validate the result using the repository-standard not-found behavior.
+The lookup result can be null before its `Id` property is accessed.
+A missing payment record will throw at runtime instead of returning 404.
 
-   `src/PaymentService.cs:84`
+**Recommended change:** Validate the result using the repository-standard not-found behavior.
 
-   ```diff
-   -var payment = await _repo.FindAsync(id);
-   -return Ok(payment.Id);
-   +var payment = await _repo.FindAsync(id);
-   +if (payment is null) return NotFound();
-   +return Ok(payment.Id);
-   ```
+`src/PaymentService.cs:84`
 
-   _Evidence: checked all three call sites; none guard the result._
+```diff
+-var payment = await _repo.FindAsync(id);
+-return Ok(payment.Id);
++var payment = await _repo.FindAsync(id);
++if (payment is null) return NotFound();
++return Ok(payment.Id);
+```
+
+_Evidence: checked all three call sites; none guard the result._
 
 ### Warnings
 
-1. **Missing test for the rejected-payment path**  
-   `tests/PaymentServiceTests.cs`
+#### 1. Missing test for the rejected-payment path
 
-   The new rejection branch has no coverage.
+`tests/PaymentServiceTests.cs`
 
-   **Recommended change:** Add a case asserting the rejection result.
+The new rejection branch has no coverage.
+
+**Recommended change:** Add a case asserting the rejection result.
 
 ### Automated checks
 
@@ -120,6 +122,10 @@ Section headings by severity: `blocking` → `### Blocking` · `warning` → `##
 ## Rules
 
 - **Omit empty sections.** No "### Warnings — none".
+- **Nothing is indented.** Findings are `####` headings rather than numbered list items,
+  because Bitbucket does not parse a fenced block indented under a list — it collapses
+  the block into one inline run with the language tag leaking in as text. Every line a
+  finding produces sits at column 0.
 - Include a `rule` citation inline when the finding has one (e.g. "violates
   `AGENTS.md#layering`"), appended to the `file:line` line after a `·`.
 - Line references use `` `path:line` `` — the path as `code-review` reported it.
@@ -205,18 +211,17 @@ resolved note:
 
 _Reviewing commits `def456..ghi789`. Findings resolved since the previous review are not repeated._
 
-### Blocking
+### Blocking · Still unresolved
 
-#### Still unresolved
+#### 1. ...
 
-1. ...
+### Blocking · Newly introduced
 
-#### Newly introduced
-
-1. ...
+#### 1. ...
 ```
 
-Separate still-unresolved from newly-introduced findings. Name resolved findings briefly
+The split folds into the `###` line rather than nesting under it, since findings are
+already `####`. Separate still-unresolved from newly-introduced findings. Name resolved findings briefly
 ("CR-001 null dereference — resolved") rather than restating them in full.
 
 ## Inline comments

@@ -362,16 +362,23 @@ shown here so you know what the draft turns into, not as something to reproduce 
 
 ### Blocking
 
-1. **Possible null dereference**
-   `src/PaymentService.cs:84` · violates `AGENTS.md#null-handling`
+#### 1. Possible null dereference
 
-   The lookup result can be null before its `Id` property is accessed.
-   A missing payment record will throw at runtime instead of returning 404.
+`src/PaymentService.cs:84` · violates `AGENTS.md#null-handling`
 
-   **Recommended change:** Validate the result and return the repository-standard
-   not-found response.
+The lookup result can be null before its `Id` property is accessed.
+A missing payment record will throw at runtime instead of returning 404.
 
-   _Evidence: checked all three call sites; none guard the result._
+**Recommended change:** Validate the result and return the repository-standard
+not-found response.
+
+```diff
+-var payment = await _repo.FindAsync(id);
++var payment = await _repo.FindAsync(id);
++if (payment is null) return NotFound();
+```
+
+_Evidence: checked all three call sites; none guard the result._
 
 ### Warnings
 
@@ -390,6 +397,10 @@ shown here so you know what the draft turns into, not as something to reproduce 
 The renderer handles the rules that used to live here — `message` and `impact` as
 separate sentences rather than a wall of text, `evidence` last in italics, `Scope`
 only when coverage was partial, empty sections omitted.
+
+Findings are `####` headings and **nothing is indented**: Bitbucket does not parse a
+fenced block indented under a list item, and collapses it into a single inline run with
+the language tag leaking in as text.
 
 Return the report to the caller or user — **never post it anywhere.**
 

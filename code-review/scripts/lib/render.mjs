@@ -105,49 +105,45 @@ export function renderFinding(finding, index, lang) {
   const t = strings(lang);
   const lines = [];
 
-  lines.push(`${index + 1}. **${escapeBareTags(finding.title)}**`);
+  // A heading, not a numbered list item. Everything a finding contains must sit
+  // at column 0: Bitbucket does not parse a fenced block indented under a list
+  // item, and silently collapses it into one inline run with the language tag
+  // leaking in as text. Flat output is the only shape that renders everywhere.
+  lines.push(`#### ${index + 1}. ${escapeBareTags(finding.title)}`);
 
   const locationParts = [];
   if (finding.file) {
     locationParts.push(finding.line ? `\`${finding.file}:${finding.line}\`` : `\`${finding.file}\``);
   }
   if (finding.rule) locationParts.push(`${t.violates} \`${finding.rule}\``);
-  if (locationParts.length) lines.push(`   ${locationParts.join(' · ')}`);
+  if (locationParts.length) lines.push('', locationParts.join(' · '));
 
   lines.push('');
-  const body = [finding.message, finding.impact].filter(Boolean).map(escapeBareTags).join('\n   ');
-  lines.push(`   ${body}`);
+  lines.push([finding.message, finding.impact].filter(Boolean).map(escapeBareTags).join('\n'));
 
-  if (finding.preExisting) {
-    lines.push('');
-    lines.push(`   _${t.preExisting}_`);
-  }
+  if (finding.preExisting) lines.push('', `_${t.preExisting}_`);
 
   lines.push('');
-  lines.push(`   **${t.recommended}:** ${escapeBareTags(finding.suggestion)}`);
+  lines.push(`**${t.recommended}:** ${escapeBareTags(finding.suggestion)}`);
 
   for (const hunk of finding.patch ?? []) {
-    lines.push('');
     const at = hunk.line ? `\`${hunk.file}:${hunk.line}\`` : `\`${hunk.file}\``;
-    lines.push(`   ${at}${hunk.note ? ` — ${escapeBareTags(hunk.note)}` : ''}`);
-    lines.push('');
-    lines.push('   ```diff');
-    for (const line of prefixLines(hunk.before, '-')) lines.push(`   ${line}`);
-    for (const line of prefixLines(hunk.after, '+')) lines.push(`   ${line}`);
-    lines.push('   ```');
+    lines.push('', `${at}${hunk.note ? ` — ${escapeBareTags(hunk.note)}` : ''}`, '');
+    lines.push('```diff');
+    lines.push(...prefixLines(hunk.before, '-'));
+    lines.push(...prefixLines(hunk.after, '+'));
+    lines.push('```');
   }
 
   if (finding.previouslyDismissed) {
-    lines.push('');
-    lines.push(`   _${t.reconsidered}: ${escapeBareTags(finding.previouslyDismissed)}_`);
+    lines.push('', `_${t.reconsidered}: ${escapeBareTags(finding.previouslyDismissed)}_`);
   }
 
   // Italic, not <sub>. Bitbucket Cloud renders no raw HTML, so an HTML tag here
   // reaches the reader as literal `<sub>` text. Keeping the renderer to pure
   // Markdown means one output that is correct on every provider.
   if (finding.evidence) {
-    lines.push('');
-    lines.push(`   _${t.evidenceLabel}: ${escapeBareTags(finding.evidence)}_`);
+    lines.push('', `_${t.evidenceLabel}: ${escapeBareTags(finding.evidence)}_`);
   }
 
   return lines.join('\n');
