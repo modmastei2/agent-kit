@@ -5,20 +5,21 @@
 // shell environment WITHOUT ever being printed to the terminal / agent transcript.
 //
 // Emits a single BB_AUTH holding a ready-to-use Authorization header value:
-//   - a workspace/repo access token  -> "Bearer <token>"
-//   - username + app password        -> "Basic <base64(user:app_password)>"
-// Token wins when both are present. All human-facing messages go to stderr;
-// stdout carries only the export lines, and never the raw secret.
+//   - a workspace/repo/project access token -> "Bearer <token>"
+// All human-facing messages go to stderr; stdout carries only the export lines,
+// and never the raw secret.
+//
+// Access tokens are the ONLY supported credential, deliberately. App passwords
+// were removed by Atlassian on 2026-07-28, and while an Atlassian API token
+// (email + token, sent as Basic) would also work, supporting a second path buys
+// nothing here and costs clarity: when auth fails you would first have to work
+// out which credential was used before you could work out why it failed.
 
 import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 const CONFIG_REL_PATH = '.review-pr/config.local.json';
-const PLACEHOLDERS = new Set([
-  'YOUR_APP_PASSWORD_HERE',
-  'YOUR_ACCESS_TOKEN_HERE',
-  'your-bitbucket-username',
-]);
+const PLACEHOLDERS = new Set(['YOUR_ACCESS_TOKEN_HERE']);
 
 function fail(message) {
   process.stderr.write(`bb-auth: ${message}\n`);
@@ -41,20 +42,21 @@ const bb = raw.bitbucket ?? {};
 const clean = (v) => (typeof v === 'string' && v.trim() && !PLACEHOLDERS.has(v.trim()) ? v.trim() : null);
 
 const token = clean(bb.token);
-const username = clean(bb.username);
-const appPassword = clean(bb.appPassword);
 
-let authValue;
-if (token) {
-  authValue = `Bearer ${token}`;
-} else if (username && appPassword) {
-  authValue = `Basic ${Buffer.from(`${username}:${appPassword}`).toString('base64')}`;
-} else {
+// A config left over from the app-password era gets the migration path, not a
+// generic "not configured" that sends you looking in the wrong place.
+if (!token && (clean(bb.username) || clean(bb.appPassword))) {
   fail(
-    `${CONFIG_REL_PATH} ยังไม่ได้กรอก bitbucket credential — ` +
-      `ใส่ "token" หรือ ("username" + "appPassword") ให้ครบ`
+    `${CONFIG_REL_PATH} ยังใช้ app password ซึ่ง Bitbucket ปิดไปแล้วเมื่อ 2026-07-28 — ` +
+      `สร้าง access token แล้วใส่ใน "token" จากนั้นลบ "username"/"appPassword" ทิ้ง`
   );
 }
+
+if (!token) {
+  fail(`${CONFIG_REL_PATH} ยังไม่ได้กรอก "bitbucket.token" (access token)`);
+}
+
+const authValue = `Bearer ${token}`;
 
 // POSIX-safe single-quote escaping: close, insert an escaped quote, reopen.
 const shSingleQuote = (s) => `'${String(s).replace(/'/g, `'\\''`)}'`;

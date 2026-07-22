@@ -25,8 +25,6 @@ GitHub and GitLab via their CLIs, and for Bitbucket via environment variables.
   "defaultBaseBranch": "dev",
   "reportLanguage": null,
   "bitbucket": {
-    "username": "your-bitbucket-username",
-    "appPassword": "YOUR_APP_PASSWORD_HERE",
     "token": null
   }
 }
@@ -39,14 +37,25 @@ GitHub and GitLab via their CLIs, and for Bitbucket via environment variables.
 - `reportLanguage` — `"en"` or `"th"`, the language of the posted comment. Set it once
   for a team that always reviews in one language and the skill stops asking. `null`
   means ask on each run; a `--lang` argument overrides it either way.
-- `bitbucket.token` — a workspace/repository **access token**. When set, it is used as
-  `Authorization: Bearer <token>` and `username`/`appPassword` are ignored.
-- `bitbucket.username` + `bitbucket.appPassword` — an **app password** pair, used as
-  HTTP Basic when no token is set.
+- `bitbucket.token` — a workspace/repository/project **access token**, used as
+  `Authorization: Bearer <token>`. This is the only supported Bitbucket credential.
 
-Fill in **either** `token` **or** (`username` + `appPassword`) — not necessarily both.
-Required Bitbucket permissions stay the same: Repositories **Read**, Pull requests
-**Write**. Nothing more.
+Required Bitbucket permissions: Repositories **Read**, Pull requests **Write**.
+Nothing more.
+
+### Why only access tokens
+
+App passwords were removed by Atlassian on 2026-07-28 (no new ones from 2025-09-09,
+brownouts from 2026-06-09). An Atlassian **API token** — email plus token, sent as HTTP
+Basic — would also authenticate, but this skill deliberately supports one credential
+type rather than two.
+
+A second path costs more than it adds: when a request comes back 401 you would first
+have to determine which credential was used before you could work out why it failed,
+and a token that quietly expires would surface as a fallback attempt rather than as an
+expired token. One path means one failure mode.
+
+Configs still carrying `username`/`appPassword` fail with a message pointing here.
 
 ## Setup
 
@@ -69,8 +78,8 @@ reads it.
 
 ## How the secret is used
 
-The Bitbucket app password / token is sensitive, so it is **never read into the agent's
-context** and **never printed**. Instead the [Bitbucket adapter](../providers/bitbucket.md)
+The Bitbucket API token / access token is sensitive, so it is **never read into the
+agent's context** and **never printed**. Instead the [Bitbucket adapter](../providers/bitbucket.md)
 sources it into the shell environment at command time:
 
 ```bash
@@ -79,16 +88,15 @@ eval "$(node <skill-dir>/scripts/bb-auth.mjs)"
 curl -sS -f -H "Authorization: $BB_AUTH" "https://api.bitbucket.org/2.0/..."
 ```
 
-[scripts/bb-auth.mjs](../scripts/bb-auth.mjs) reads the config, picks token-over-password,
+[scripts/bb-auth.mjs](../scripts/bb-auth.mjs) reads the config, prefers the access token,
 builds the header value (`Bearer …` or `Basic …`), and writes only an `export BB_AUTH=…`
 line to stdout — which `eval` consumes without displaying. The raw credential exists only
 in the file (gitignored) and in the process environment, exactly as with `jira-tracker`.
 
 ## Precedence for Bitbucket credentials
 
-1. `.review-pr/config.local.json` (`bitbucket.token`, then `username`+`appPassword`)
-2. Environment variables (`BITBUCKET_TOKEN`, or `BITBUCKET_USERNAME` +
-   `BITBUCKET_APP_PASSWORD`)
+1. `.review-pr/config.local.json` (`bitbucket.token`)
+2. Environment variable `BITBUCKET_TOKEN`
 3. A `bitbucket.org` entry in the Git credential manager / `~/.netrc`
 
 Use the first that yields a usable credential. If none do, stop and tell the user to fill

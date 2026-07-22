@@ -113,7 +113,7 @@ without ever being printed; it is never read into context.
 Needed scopes: **read repository**, **read pull/merge requests**, **write comments**.
 Never request or use merge, admin, or delete permissions.
 
-**Never print a token, app password, secret, or the contents of a credential file** —
+**Never print a token, API token, secret, or the contents of a credential file** —
 not in output, not in a command echo, not in the PR comment. Report auth state as
 present/absent only.
 

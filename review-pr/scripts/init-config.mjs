@@ -22,8 +22,6 @@ const TEMPLATE = {
   defaultBaseBranch: 'dev',
   reportLanguage: null,
   bitbucket: {
-    username: 'your-bitbucket-username',
-    appPassword: 'YOUR_APP_PASSWORD_HERE',
     token: null,
   },
 };
@@ -59,6 +57,7 @@ ensureGitignored();
 
 process.stdout.write(
   `สร้างไฟล์ config ที่ ${CONFIG_REL_PATH} แล้ว และเพิ่มลง .gitignore ให้เรียบร้อย\n` +
-    `ถ้ารีวิว Bitbucket ให้กรอก "token" หรือ ("username" + "appPassword") ก่อนใช้งาน\n` +
+    `ถ้ารีวิว Bitbucket ให้กรอก "bitbucket.token" (access token) ก่อนใช้งาน\n` +
+    `หมายเหตุ: app password ใช้ไม่ได้แล้วตั้งแต่ 2026-07-28\n` +
     `(GitHub/GitLab ไม่ต้องกรอก — ใช้ gh/glab auth ตามปกติ)\n`
 );

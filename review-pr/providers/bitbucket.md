@@ -35,22 +35,23 @@ curl -sS -f -H "Authorization: $BB_AUTH" \
 
 ## authenticate
 
-Bitbucket Cloud accepts an app password (username + app password, sent as HTTP Basic) or
-a workspace/repository **access token** (sent as `Authorization: Bearer`). Credentials
-come from, in order — see [../references/config.md](../references/config.md):
+Authentication uses a workspace/repository/project **access token**, sent as
+`Authorization: Bearer`. That is the only supported credential — app passwords were
+removed by Atlassian on 2026-07-28, and a second path is deliberately not offered so an
+auth failure has one explanation rather than several. See
+[../references/config.md](../references/config.md).
 
-1. `.review-pr/config.local.json` → `bitbucket.token`, else `bitbucket.username` +
-   `bitbucket.appPassword`
-2. environment variables: `BITBUCKET_TOKEN`, or `BITBUCKET_USERNAME` +
-   `BITBUCKET_APP_PASSWORD`
+Credentials come from, in order:
+
+1. `.review-pr/config.local.json` → `bitbucket.token`
+2. environment variable `BITBUCKET_TOKEN`
 3. the `bitbucket.org` entry in the Git credential manager / `~/.netrc`
 
 Required permissions: **Repositories: Read** and **Pull requests: Write** (write is what
 grants comment creation). Do not request Admin, Webhooks, or merge permissions.
 
 **Load the credential into the environment without printing it.** The helper reads the
-config, prefers a token over an app password, and emits only an `export BB_AUTH=…` line
-that `eval` consumes silently:
+config and emits only an `export BB_AUTH=…` line that `eval` consumes silently:
 
 ```bash
 eval "$(node "$SKILL_DIR/scripts/bb-auth.mjs")"   # sets BB_AUTH; nothing is printed
@@ -60,13 +61,12 @@ eval "$(node "$SKILL_DIR/scripts/bb-auth.mjs")"   # sets BB_AUTH; nothing is pri
 `-H "Authorization: $BB_AUTH"` — there is no `-u user:password` on the command line, so
 the secret never appears in a command echo.
 
-When credentials come from the environment instead of the config file, set `BB_AUTH`
-yourself the same way — a `Bearer <token>` or a `Basic <base64(user:app_password)>`
-value — rather than passing `-u`.
+When the credential comes from the environment instead of the config file, set `BB_AUTH`
+yourself the same way — a `Bearer <token>` value — rather than passing `-u`.
 
 If no credential resolves, **stop** and tell the user to fill in
 `.review-pr/config.local.json` (creating it from the template if missing) or set the
-environment variables. **Never echo the token, the app password, the header value, or a
+environment variables. **Never echo the token, the API token, the header value, or a
 credential file** — not in output, not in a command, not in a PR comment.
 
 ## listOpen
