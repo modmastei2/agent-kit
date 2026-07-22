@@ -1,8 +1,16 @@
 # Review comment template
 
-How to render a `code-review` result as a PR/MR comment. **Presentation only** — the
-wording of findings, their severity, and the verdict come from `code-review` and must
-not be altered here.
+What `scripts/pr.mjs comment` produces, documented so you can recognize a correct
+comment — **not** a format to reproduce by hand. Rendering is the script's job:
+
+```bash
+node "$SKILL_DIR/scripts/pr.mjs" comment --input review-result.json \
+  --head <headSha> --base <baseBranch> [--comment prior-comment.md]
+```
+
+**Presentation only** — the wording of findings, their severity, and the verdict come
+from `code-review` and are never altered here. The script enforces that: it recomputes
+the verdict from the findings and refuses to render if the file disagrees.
 
 ## Structure
 
@@ -114,13 +122,20 @@ Section headings by severity: `blocking` → `### Blocking` · `warning` → `##
 ## State marker
 
 The HTML comment at the end is machine-readable state for incremental re-review. It is
-invisible in rendered Markdown on all three providers.
+invisible in rendered Markdown on all three providers, and is written and parsed by
+`scripts/lib/state.mjs` — never hand-edited.
 
 ```html
 <!-- ai-review-state:
 {
   "reviewedHeadSha": "def456",
-  "reviewVersion": 1
+  "reviewVersion": 1,
+  "findings": [
+    { "fp": "correctness:src/PaymentService.cs", "id": "CR-001", "sev": "blocking" }
+  ],
+  "dismissed": [
+    { "fp": "testing:tests/OrderMappingTests.cs", "why": "characterization tests, intent documented inline" }
+  ]
 }
 -->
 ```
@@ -128,10 +143,19 @@ invisible in rendered Markdown on all three providers.
 - `reviewedHeadSha` — the full head SHA reviewed. Must equal the **Reviewed commit** in
   the body.
 - `reviewVersion` — starts at `1`, incremented on each re-review of the same PR.
+- `findings` — fingerprints of what was reported, so the next round can tell resolved
+  from still-unresolved.
+- `dismissed` — what a round examined and deliberately did **not** report, with the
+  reason. This is what stops a later review from quietly reversing an earlier judgement:
+  `pr.mjs compare` fails when a new finding matches a dismissal and carries no
+  `previouslyDismissed` explanation.
 
-On re-review, find the prior comment by this marker, take its `reviewedHeadSha` as the
-previous point, and update the marker to the new head SHA. If the marker is missing or
-unparseable, treat the PR as never reviewed and run a full review.
+Fingerprints are `<category>:<file>` — deliberately coarse, since line numbers drift and
+titles get reworded between rounds, and a fingerprint that stops matching is worse than
+one that occasionally over-matches.
+
+Pass the prior comment with `--comment`; a missing or unparseable marker is treated as
+"never reviewed" and triggers a full review.
 
 ## Incremental re-review comment
 

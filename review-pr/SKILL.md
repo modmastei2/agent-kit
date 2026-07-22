@@ -241,24 +241,50 @@ own, or restate the verdict in friendlier terms. If `code-review` fails or retur
 
 ### Review update mode (`--review-updates`)
 
-For a PR already reviewed:
+For a PR already reviewed, ask the script whether an incremental review is even
+possible — do not decide this yourself:
 
-1. Read the previous review comment's state marker (see
-   [templates/review-comment.md](templates/review-comment.md)).
-2. Take `reviewedHeadSha` as the previous point.
-3. Verify that SHA is still reachable (`git cat-file -e <sha>^{commit}`). If it is
-   missing — force-push, rebase, squash — **run a full PR review instead** and say why.
-4. Otherwise review `previousReviewedSha...headSha`, and re-check every unresolved
-   blocking finding from the previous review against current code.
-5. Report newly introduced issues separately from still-unresolved ones. Do not repeat
-   findings that are now fixed; state that they were resolved.
-6. Set `reviewMode` to `incremental` and bump `reviewVersion` in the new marker.
+```bash
+node "$SKILL_DIR/scripts/pr.mjs" state --head <headSha> --comment prior-comment.md
+```
+
+It reads the previous comment's state marker, checks whether `reviewedHeadSha` is still
+reachable, and returns `{ mode, reason, reviewVersion, previousFindings, previousDismissed }`.
+When `mode` is `full` — force-push, rebase, squash, or no prior review — the `reason`
+travels with it and **must appear in the comment**. A full re-review labelled "update 2"
+with no stated reason is indistinguishable from a bug.
+
+On `incremental`, review `previousReviewedSha...headSha` and re-check every unresolved
+blocking finding from the previous round against current code.
+
+Feed `previousDismissed` into the review itself. If you now want to report something a
+previous round deliberately dismissed, you must set `previouslyDismissed` on that
+finding explaining what changed — the comparison step rejects a silent reversal.
 
 ## 8. Format the comment
 
-Render the `code-review` result using
-[templates/review-comment.md](templates/review-comment.md). The template is presentation
-only — it must not change what the findings say.
+**Do not write the comment by hand.** Render it:
+
+```bash
+node "$SKILL_DIR/scripts/pr.mjs" comment --input review-result.json \
+  --head <headSha> --base <baseBranch> [--comment prior-comment.md]
+```
+
+The script derives the status line from the verdict, splits still-unresolved from
+newly-introduced findings, states the full-rerun reason, renders in `reportLanguage`,
+and emits the state marker with the fingerprints and dismissals for the next round.
+[templates/review-comment.md](templates/review-comment.md) documents what it produces.
+
+It **fails** rather than rendering when the verdict contradicts the findings, when
+`--lang` disagrees with the result's own language, or when a finding reverses a previous
+dismissal without explanation. Fix the input; never bypass it by writing the Markdown
+yourself.
+
+To check the comparison alone before rendering:
+
+```bash
+node "$SKILL_DIR/scripts/pr.mjs" compare --input review-result.json --comment prior-comment.md
+```
 
 Prefer **one general comment**. Inline comments only when all hold: the file and line
 are reliable, the issue is concrete, the provider supports inline safely per its

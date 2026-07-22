@@ -219,6 +219,19 @@
           "confidence": {
             "enum": ["verified", "likely", "unverified"],
             "description": "Optional. 'verified' means confirmed by reading the surrounding code or by a failing check."
+          },
+          "preExisting": {
+            "type": "boolean",
+            "default": false,
+            "description": "The problem is not introduced by this change. Only committed secrets qualify (see policies/security.md); a pre-existing finding may never be blocking."
+          },
+          "previouslyDismissed": {
+            "type": "string",
+            "description": "Required when re-reporting something an earlier review deliberately dismissed: what changed to justify reversing that judgement. review-pr refuses to render a silent reversal."
+          },
+          "fp": {
+            "type": "string",
+            "description": "Optional stable fingerprint for cross-round matching. Defaults to '<category>:<file>'."
           }
         }
       }
@@ -227,6 +240,29 @@
       "type": "array",
       "description": "Anything that prevented full review: checks not run, files unreadable, missing infrastructure. Required to be non-empty when verdict is unable_to_complete.",
       "items": { "type": "string" }
+    },
+    "dismissed": {
+      "type": "array",
+      "description": "Things examined and deliberately not reported, with the reason. Carried into the next review's state so a later round cannot silently reverse the judgement. Record anything a reader might otherwise expect to see flagged.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["why"],
+        "properties": {
+          "fp": {
+            "type": "string",
+            "description": "Fingerprint, '<category>:<file>'. Derived from category and file when omitted."
+          },
+          "category": { "type": "string" },
+          "file": { "type": "string" },
+          "title": { "type": "string" },
+          "why": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Why this is not a finding. A later round must address this reason to report it."
+          }
+        }
+      }
     },
     "reviewedAt": {
       "type": "string",

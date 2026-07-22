@@ -217,9 +217,9 @@ Bad — buries the point under methodology:
 > Verified against raw blob bytes with `git cat-file blob` (not `git show`, which can
 > apply EOL conversion): every pre-existing source file at the base commit is 100%
 > CRLF (`OrderService.cs` 240/240, `PricingCalculator.cs` 360/360,
-> `ConfigLoader.cs` 26/26), and the files this PR adds are also committed
-> CRLF, and there is no `.gitattributes`, so the rule is violated by the very commit
-> that introduces it, and …
+> `ConfigLoader.cs` 26/26), and the files this PR adds are also committed CRLF, and
+> there is no `.gitattributes`, so the rule is violated by the very commit that
+> introduces it, and …
 
 Good — same facts, ordered for the reader:
 
@@ -231,7 +231,7 @@ Good — same facts, ordered for the reader:
 > one isolated commit, or set `end_of_line = crlf` to match reality — the lower-risk
 > option if there is no active move to LF.
 > **evidence:** Checked with `git cat-file blob` rather than `git show`, which converts
-> EOL; all files at the base commit and every file this PR adds are CRLF.
+> EOL; every file at the base commit and every file this PR adds is CRLF.
 
 Say nothing about subjective preference unless it materially affects clarity,
 consistency, safety, or maintainability. An empty findings list is a valid, good
@@ -239,14 +239,24 @@ outcome — do not manufacture findings to look thorough.
 
 ## 7. Emit the result
 
-Produce **both** outputs, JSON first.
+**Do not write the report by hand.** Write a draft JSON file of findings, then let
+the script validate it, derive the verdict, and render the Markdown:
 
-### JSON
+```bash
+node "$SKILL_DIR/scripts/review.mjs" render --input draft.json           # Markdown
+node "$SKILL_DIR/scripts/review.mjs" render --input draft.json --json    # JSON + report
+node "$SKILL_DIR/scripts/review.mjs" validate --input draft.json         # check only
+```
 
-Must validate against [schemas/review-result.schema.json](schemas/review-result.schema.json).
-Findings are numbered `CR-001`, `CR-002`, … in the order reported (most severe first).
+`--lang en|th` overrides the draft's `reportLanguage`. `--renumber` reassigns
+`CR-001`… in severity order instead of failing on ordering.
 
-**The verdict is derived, not chosen:**
+The draft is a review result **without** `verdict` — everything else per
+[schemas/review-result.schema.json](schemas/review-result.schema.json). If the script
+exits non-zero, fix the draft and re-run; do not hand-write the output to work around
+it. Relay its stdout as the report and its stderr as-is on failure.
+
+**The verdict is derived, never chosen:**
 
 | Condition | Verdict |
 | --- | --- |
@@ -255,12 +265,36 @@ Findings are numbered `CR-001`, `CR-002`, … in the order reported (most severe
 | no actionable findings | `pass` |
 | target unresolvable / diff unreadable / review aborted | `unable_to_complete` |
 
-Compute it from the findings array. Never state a verdict the findings contradict.
-`unable_to_complete` requires at least one entry in `limitations`.
+Only `unable_to_complete` is declared by you — no set of findings can express "the
+review did not happen" — and it requires a non-empty `limitations`.
+
+### What the script enforces
+
+Length caps, ordering, enums, verdict consistency, and that a `preExisting` finding is
+never `blocking`. Caps are **per language**: Thai has no inter-word spaces, so the same
+character budget carries far more content, and its limits are ~60% of the English ones.
+Sentence counts are checked for English only, ignoring periods inside `` `code` `` and
+version numbers.
+
+### Record what you dismissed
+
+Anything you examined and decided **not** to report — a pattern that looks wrong but is
+deliberate, a risk that turned out to be handled — belongs in `dismissed` with the
+reason, not in `limitations` prose:
+
+```json
+{ "category": "testing", "file": "tests/OrderMappingTests.cs",
+  "why": "characterization tests; inline comments and a docs/ writeup make the intent explicit" }
+```
+
+`review-pr` carries these into the next round's state and **refuses to render a later
+review that reports one of them without explanation**. Skipping this field is how a
+follow-up review ends up silently contradicting its own previous conclusion.
 
 ### Markdown report
 
-Written in [the resolved report language](#report-language).
+Produced by `scripts/review.mjs` in [the resolved report language](#report-language) —
+shown here so you know what the draft turns into, not as something to reproduce by hand.
 
 ```markdown
 ## Code Review
@@ -296,14 +330,9 @@ Written in [the resolved report language](#report-language).
 - Integration tests were not executed because the required database was unavailable.
 ```
 
-Rendering rules:
-
-- `message` and `impact` are **separate sentences in one paragraph**, in that order —
-  never merged into a wall of text.
-- `evidence` renders last, in `<sub>` tags, and is omitted when absent.
-- Include the `Scope` line whenever fewer than all changed files were reviewed; omit it
-  when coverage was complete.
-- Omit empty sections.
+The renderer handles the rules that used to live here — `message` and `impact` as
+separate sentences rather than a wall of text, `evidence` last in `<sub>` tags, `Scope`
+only when coverage was partial, empty sections omitted.
 
 Return the report to the caller or user — **never post it anywhere.**
 
