@@ -203,6 +203,36 @@ Hard limits — a finding that exceeds them is not more thorough, it is unread:
 | `impact` | **≤2 sentences** | the concrete consequence if it ships |
 | `suggestion` | **≤3 sentences** | the fix, specific enough to act on |
 | `evidence` | **≤2 sentences**, optional | the proof, only when non-obvious |
+| `patch` | **no prose cap**, optional | before/after code for the fix |
+
+### Show the fix as code
+
+`suggestion` says what to do; `patch` shows it. Include a patch whenever the
+remediation is a concrete code edit — a reviewer should be able to apply it without
+reconstructing it from a description. Omit it when the fix is structural (move this
+into a shared service) or a judgement call, where invented code would be worse than none.
+
+```json
+"patch": [
+  { "file": "src/BatchEditService.cs", "line": 491,
+    "before": "var path = Path.Combine(root, param.PathName, param.UploadFile);",
+    "after":  "var path = BuildLocalTempFilePath(param.PathName, param.UploadFile);" }
+]
+```
+
+One entry per edit site, up to 5 — a fix touching more than that should show one or two
+representative sites and describe the rest. `before` must be **verbatim from the file**,
+not paraphrased, or the reader cannot match it against what they have; omit it for a
+pure addition. `after` must be real code, never a description of code.
+
+**Patches are exempt from the prose caps.** Code is not prose, and truncating it defeats
+the point of including it — the limit is 800 characters per side, enough for a method
+body and small enough to keep from pasting whole files. Quote only the lines that change
+plus the minimum context needed to locate them.
+
+**Code is never translated.** `reportLanguage` governs the prose around a patch; the code
+itself, including comments and identifiers, is reproduced exactly as it appears — or
+would appear — in the file. `note` is prose and follows the report language.
 
 Verification discipline is unchanged — keep verifying exactly as thoroughly. `evidence`
 exists so that the proof stays available without crowding out the point. Use it only
@@ -275,8 +305,9 @@ review did not happen" — and it requires a non-empty `limitations`.
 
 ### What the script enforces
 
-Length caps, ordering, enums, verdict consistency, and that a `preExisting` finding is
-never `blocking`. Caps are **per language**: Thai has no inter-word spaces, so the same
+Length caps, ordering, enums, verdict consistency, that a `preExisting` finding is never
+`blocking`, and that each `patch` hunk names a file, carries real `after` code, differs
+from its `before`, and stays inside the 800-character budget. Caps are **per language**: Thai has no inter-word spaces, so the same
 character budget carries far more content, and its limits are ~60% of the English ones.
 Sentence counts are checked for English only, ignoring periods inside `` `code` `` and
 version numbers.

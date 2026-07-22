@@ -212,6 +212,42 @@
             "maxLength": 300,
             "description": "Optional proof of the claim: a non-obvious command, a byte-level check, a count across files. At most two sentences. Omit when the cited line speaks for itself."
           },
+          "patch": {
+            "type": "array",
+            "maxItems": 5,
+            "description": "Concrete before/after for the fix, one entry per edit site. Deliberately exempt from the prose length caps — code is not prose, and truncating it would defeat the point. Include whenever the remediation is a specific code edit; omit when the fix is structural or a judgement call. Code is never translated: only the surrounding prose follows reportLanguage.",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["file", "after"],
+              "properties": {
+                "file": {
+                  "type": "string",
+                  "description": "Repository-relative path of this edit site."
+                },
+                "line": {
+                  "type": ["integer", "null"],
+                  "minimum": 1,
+                  "description": "Line the edit applies to."
+                },
+                "before": {
+                  "type": "string",
+                  "maxLength": 800,
+                  "description": "Current code, verbatim from the file. Omit for a pure addition."
+                },
+                "after": {
+                  "type": "string",
+                  "maxLength": 800,
+                  "description": "Proposed replacement. Must be real code, not a description of code."
+                },
+                "note": {
+                  "type": "string",
+                  "maxLength": 200,
+                  "description": "Optional one-line caption when the edit is not self-explanatory."
+                }
+              }
+            }
+          },
           "rule": {
             "type": ["string", "null"],
             "description": "Applicable repository rule, e.g. 'AGENTS.md#layering'. Null when only general policy applies."

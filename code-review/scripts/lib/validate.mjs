@@ -68,6 +68,45 @@ function checkProse(finding, field, lang, problems) {
   }
 }
 
+const PATCH_CODE_CAP = 800;
+const PATCH_MAX_HUNKS = 5;
+
+function validatePatch(finding, label, problems) {
+  const patch = finding.patch;
+  if (patch === undefined || patch === null) return;
+
+  if (!Array.isArray(patch)) {
+    problems.push(`${label}: patch ต้องเป็น array`);
+    return;
+  }
+  if (patch.length > PATCH_MAX_HUNKS) {
+    problems.push(
+      `${label}: patch มี ${patch.length} จุด เกิน ${PATCH_MAX_HUNKS} — ` +
+        `ถ้าต้องแก้หลายที่ขนาดนั้น ให้ยกตัวอย่าง 1-2 จุดที่เป็นตัวแทน แล้วอธิบายที่เหลือใน suggestion`
+    );
+  }
+
+  for (const [index, hunk] of patch.entries()) {
+    const at = `${label} patch[${index}]`;
+    if (!hunk.file) problems.push(`${at}: ขาด file`);
+    if (!hunk.after) problems.push(`${at}: ขาด after (โค้ดที่ควรจะเป็น)`);
+
+    for (const field of ['before', 'after']) {
+      const value = hunk[field];
+      if (value != null && value.length > PATCH_CODE_CAP) {
+        problems.push(
+          `${at} ${field}: ยาว ${value.length} ตัวอักษร เกิน ${PATCH_CODE_CAP} — ` +
+            `ยกมาเฉพาะบรรทัดที่เกี่ยวข้อง ไม่ต้องยกทั้ง method`
+        );
+      }
+    }
+
+    if (hunk.before != null && hunk.before === hunk.after) {
+      problems.push(`${at}: before กับ after เหมือนกัน — ไม่มีอะไรให้แก้`);
+    }
+  }
+}
+
 function validateFinding(finding, index, lang, problems) {
   const label = finding.id ?? `findings[${index}]`;
 
@@ -91,9 +130,14 @@ function validateFinding(finding, index, lang, problems) {
     problems.push(`${label}: endLine น้อยกว่า line`);
   }
 
+  // Prose only. `patch` is intentionally absent from this list: it carries code,
+  // and applying a prose budget to code would truncate exactly the part that
+  // makes a finding actionable.
   for (const field of ['title', 'message', 'impact', 'suggestion', 'evidence']) {
     checkProse(finding, field, lang, problems);
   }
+
+  validatePatch(finding, label, problems);
 
   // The one exception to diff-awareness: a pre-existing committed secret is
   // reported, but it must never be the reason an author cannot merge.

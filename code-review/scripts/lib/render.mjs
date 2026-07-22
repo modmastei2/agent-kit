@@ -22,6 +22,17 @@ function targetRange(target) {
 }
 
 /**
+ * Prefix each line of a code block with a diff marker.
+ *
+ * Trailing newlines are dropped so a block does not end with a bare marker, but
+ * interior blank lines are kept — they are part of the code as written.
+ */
+function prefixLines(code, marker) {
+  if (code == null || code === '') return [];
+  return String(code).replace(/\n+$/, '').split('\n').map((line) => `${marker}${line}`);
+}
+
+/**
  * One finding, rendered.
  *
  * The order is fixed and deliberate: what is wrong, what it costs, how to fix
@@ -53,6 +64,17 @@ export function renderFinding(finding, index, lang) {
 
   lines.push('');
   lines.push(`   **${t.recommended}:** ${finding.suggestion}`);
+
+  for (const hunk of finding.patch ?? []) {
+    lines.push('');
+    const at = hunk.line ? `\`${hunk.file}:${hunk.line}\`` : `\`${hunk.file}\``;
+    lines.push(`   ${at}${hunk.note ? ` — ${hunk.note}` : ''}`);
+    lines.push('');
+    lines.push('   ```diff');
+    for (const line of prefixLines(hunk.before, '-')) lines.push(`   ${line}`);
+    for (const line of prefixLines(hunk.after, '+')) lines.push(`   ${line}`);
+    lines.push('   ```');
+  }
 
   if (finding.previouslyDismissed) {
     lines.push('');
