@@ -18,8 +18,18 @@ const SPEC = {
 
 function readJson(path, label) {
   if (!path) throw new ArgsError(`ต้องระบุ ${label}`);
+  const raw = readText(path, label);
   try {
-    return JSON.parse(readFileSync(path, 'utf8'));
+    return JSON.parse(raw);
+  } catch (err) {
+    throw new ArgsError(`ไฟล์ ${path} ไม่ใช่ JSON ที่ถูกต้อง: ${err.message}`);
+  }
+}
+
+function readText(path, label) {
+  if (!path) throw new ArgsError(`ต้องระบุ ${label}`);
+  try {
+    return readFileSync(path, 'utf8');
   } catch (err) {
     throw new ArgsError(`อ่าน ${path} ไม่ได้: ${err.message}`);
   }
@@ -27,7 +37,7 @@ function readJson(path, label) {
 
 function readPrevious(args) {
   if (args.previous) return readJson(args.previous, '--previous');
-  if (args.comment) return parseMarker(readFileSync(args.comment, 'utf8'));
+  if (args.comment) return parseMarker(readText(args.comment, '--comment'));
   return null;
 }
 

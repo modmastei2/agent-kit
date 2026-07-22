@@ -256,6 +256,11 @@ The draft is a review result **without** `verdict` — everything else per
 exits non-zero, fix the draft and re-run; do not hand-write the output to work around
 it. Relay its stdout as the report and its stderr as-is on failure.
 
+Script diagnostics ("missing flag", "cannot read file") are Thai regardless of
+`--lang`, matching `jira-tracker`. `--lang` governs the review that reaches the reader,
+not the tooling messages you act on. Text that does reach the reader — a full-rerun
+reason, a contradiction explanation — is written in both languages at its source.
+
 **The verdict is derived, never chosen:**
 
 | Condition | Verdict |
