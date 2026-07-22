@@ -6,6 +6,7 @@ import { deriveVerdict } from '../../code-review/scripts/lib/verdict.mjs';
 import { StateError, decideMode, parseMarker } from './lib/state.mjs';
 import { ContradictionError, compareRounds } from './lib/compare.mjs';
 import { renderComment } from './lib/comment.mjs';
+import { RenderError } from '../../code-review/scripts/lib/render.mjs';
 
 const SPEC = {
   input: { aliases: ['--input', '-i'], type: 'string' },
@@ -14,7 +15,18 @@ const SPEC = {
   head: { aliases: ['--head'], type: 'string' },
   base: { aliases: ['--base'], type: 'string' },
   lang: { aliases: ['--lang', '-l'], type: 'string' },
+  provider: { aliases: ['--provider', '-p'], type: 'string' },
 };
+
+const PROVIDERS = ['github', 'gitlab', 'bitbucket'];
+
+function resolveProvider(args) {
+  const provider = args.provider ?? 'github';
+  if (!PROVIDERS.includes(provider)) {
+    throw new ArgsError(`provider "${provider}" ไม่รองรับ (${PROVIDERS.join('/')})`);
+  }
+  return provider;
+}
 
 function readJson(path, label) {
   if (!path) throw new ArgsError(`ต้องระบุ ${label}`);
@@ -128,6 +140,7 @@ function runComment(argv) {
     fullRerunReason: decision.mode === 'full' && previous ? decision.reason : null,
     comparison,
     dismissed: result.dismissed ?? [],
+    provider: resolveProvider(args),
   });
 }
 
@@ -137,7 +150,7 @@ const COMMANDS = {
   comment: runComment,
 };
 
-const KNOWN_ERRORS = [ArgsError, StateError, ContradictionError];
+const KNOWN_ERRORS = [ArgsError, StateError, ContradictionError, RenderError];
 
 function main() {
   const [, , command, ...rest] = process.argv;

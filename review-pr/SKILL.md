@@ -267,12 +267,17 @@ finding explaining what changed — the comparison step rejects a silent reversa
 
 ```bash
 node "$SKILL_DIR/scripts/pr.mjs" comment --input review-result.json \
-  --head <headSha> --base <baseBranch> [--comment prior-comment.md]
+  --head <headSha> --base <baseBranch> --provider <provider> [--comment prior-comment.md]
 ```
 
 The script derives the status line from the verdict, splits still-unresolved from
 newly-introduced findings, states the full-rerun reason, renders in `reportLanguage`,
 and emits the state marker with the fingerprints and dismissals for the next round.
+
+**Always pass `--provider`.** The state marker's shape depends on it: Bitbucket Cloud
+renders no HTML comments and auto-links any SHA it can see, which corrupts the marker
+and makes every re-review fall back to a full one blamed on a force-push. It defaults to
+`github`, which is wrong for the other two.
 [templates/review-comment.md](templates/review-comment.md) documents what it produces.
 
 It **fails** rather than rendering when the verdict contradicts the findings, when

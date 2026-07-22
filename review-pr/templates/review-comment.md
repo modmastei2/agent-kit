@@ -42,7 +42,7 @@ the verdict from the findings and refuses to render if the file disagrees.
    +return Ok(payment.Id);
    ```
 
-   <sub>Checked all three call sites; none guard the result.</sub>
+   _Evidence: checked all three call sites; none guard the result._
 
 ### Warnings
 
@@ -91,16 +91,26 @@ Verdict rendering:
 
 | `verdict` | Status line (`en`) | Status line (`th`) |
 | --- | --- | --- |
-| `changes_required` | `Changes requested` | `ต้องแก้ไข` |
-| `pass_with_warnings` | `Approved with comments — human approval still required` | `ผ่านแบบมีข้อสังเกต — ยังต้องรอคนอนุมัติ` |
-| `pass` | `No blocking issues found — human approval still required` | `ไม่พบปัญหาที่ต้องแก้ก่อน merge — ยังต้องรอคนอนุมัติ` |
-| `unable_to_complete` | `Review incomplete` | `รีวิวไม่สมบูรณ์` |
+| `changes_required` | `Changes requested` | `Changes requested` |
+| `pass_with_warnings` | `Approved with comments — human approval still required` | `Approved with comments — ยังต้องรอคนอนุมัติ` |
+| `pass` | `No blocking issues found — human approval still required` | `No blocking issues found — ยังต้องรอคนอนุมัติ` |
+| `unable_to_complete` | `Review incomplete` | `Review incomplete` |
 
-Thai headings: `### Blocking` → `### ต้องแก้ก่อน merge` · `### Warnings` → `### ข้อสังเกต` ·
-`### Suggestions` → `### ข้อเสนอแนะ` · `### Automated checks` → `### ผลตรวจอัตโนมัติ` ·
-`### Limitations` → `### ข้อจำกัดของการรีวิว` · **Recommended change** → **แนะนำให้แก้เป็น**.
-Field labels follow suit: **Status** → **สถานะ**, **Reviewed commit** → **Commit ที่รีวิว**,
-**Base** → **Base**, **Scope** → **ขอบเขต**.
+**Status values stay English in Thai reports**, as do check statuses
+(`Passed`/`Failed`/`Skipped`/`Not available`). They are the vocabulary the provider UI
+already uses and the team says out loud, so translating them would create a second name
+for the same state. Only the sentence around a status is Thai.
+
+**Headings and field labels are English in both languages** — the comment title, every
+`###`/`####` heading, `Status`, `Reviewed commit`, `Base`, `Scope`, `Recommended change`,
+`Evidence`, the status values and the check results. `reportLanguage` changes the
+sentences, not the frame.
+
+`scripts/lib/i18n.mjs` enforces this structurally: the chrome lives in one shared
+`CHROME` object with no per-language variant, so a heading has nowhere to be translated
+to. Only `PROSE` is per-language — the disclaimer, the scope wording, the full-rerun and
+resolved notes, the pre-existing and reconsidered captions, and the clause after a
+status (`Approved with comments — ยังต้องรอคนอนุมัติ`).
 
 Thai disclaimer: `รีวิวนี้สร้างโดย AI และควรได้รับการตรวจสอบโดยผู้รีวิวที่เป็นคน`
 
@@ -115,8 +125,11 @@ Section headings by severity: `blocking` → `### Blocking` · `warning` → `##
 - Line references use `` `path:line` `` — the path as `code-review` reported it.
 - **Never merge `message` and `impact` into one flowing block of prose.** They are two
   sentences with a break in meaning: what is wrong, then what it costs.
-- `evidence` renders last, wrapped in `<sub>` tags so it reads as a footnote, and is
-  omitted when the field is absent. Never promote it above the finding itself.
+- `evidence` renders last, in italics behind an "Evidence"/"หลักฐาน" label so it reads as
+  a footnote, and is omitted when the field is absent. Never promote it above the finding
+  itself. It is deliberately **not** `<sub>`: Bitbucket renders no raw HTML, so the tag
+  would reach the reader as literal text. Everything the renderer emits is plain Markdown
+  apart from the GitHub/GitLab state marker.
 - **Never lengthen what `code-review` returned.** Its fields are capped deliberately
   (see its schema); do not pad them into paragraphs, restate the finding in different
   words, or add context of your own. Rendering only.
@@ -131,9 +144,19 @@ Section headings by severity: `blocking` → `### Blocking` · `warning` → `##
 
 ## State marker
 
-The HTML comment at the end is machine-readable state for incremental re-review. It is
-invisible in rendered Markdown on all three providers, and is written and parsed by
+Machine-readable state for incremental re-review, written and parsed by
 `scripts/lib/state.mjs` — never hand-edited.
+
+**The shape depends on the provider.** GitHub and GitLab hide an HTML comment, so the
+state stays invisible there. **Bitbucket Cloud renders neither raw HTML nor HTML
+comments**: the payload appears as visible text *and* Bitbucket auto-links the commit
+SHA inside it into `[sha](url)`, corrupting the state. A corrupted SHA fails the
+reachability check, so every re-review silently falls back to a full review and reports
+it as a force-push — the wrong diagnosis, pointing at the wrong cause.
+
+Bitbucket therefore gets a fenced code block: visible, but inert and never rewritten.
+Pass `--provider bitbucket` to `pr.mjs comment`. The parser reads both shapes, and
+repairs an auto-linked SHA in markers that were already posted.
 
 ```html
 <!-- ai-review-state:

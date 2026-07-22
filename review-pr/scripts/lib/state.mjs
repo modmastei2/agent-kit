@@ -7,7 +7,56 @@ export class StateError extends Error {
   }
 }
 
-const MARKER_RE = /<!--\s*ai-review-state:\s*([\s\S]*?)-->/;
+const MARKER_LABEL = 'ai-review-state';
+const SHA_RE = /^[0-9a-f]{7,40}$/;
+
+/**
+ * Pull the JSON object that follows the marker label, brace-balanced.
+ *
+ * The label appears in two shapes: an HTML comment on GitHub/GitLab, and a
+ * fenced code block on Bitbucket, which renders neither raw HTML nor HTML
+ * comments. Scanning from the label to the matching close brace reads both, and
+ * survives a provider adding markup around the payload.
+ */
+function extractPayload(text) {
+  const start = text.indexOf(MARKER_LABEL);
+  if (start === -1) return null;
+
+  const open = text.indexOf('{', start);
+  if (open === -1) return null;
+
+  let depth = 0;
+  let inString = false;
+  let escaped = false;
+
+  for (let i = open; i < text.length; i++) {
+    const ch = text[i];
+
+    if (escaped) { escaped = false; continue; }
+    if (ch === '\\') { escaped = true; continue; }
+    if (ch === '"') { inString = !inString; continue; }
+    if (inString) continue;
+
+    if (ch === '{') depth++;
+    else if (ch === '}') {
+      depth--;
+      if (depth === 0) return text.slice(open, i + 1);
+    }
+  }
+  return null;
+}
+
+/**
+ * Undo provider auto-linking of a bare value.
+ *
+ * Bitbucket rewrites a commit SHA inside the marker into `[sha](url)`, which
+ * silently turns every re-review into a full review reported as a force-push.
+ * Markers already posted cannot be fixed retroactively, so recover them here.
+ */
+function unlink(value) {
+  if (typeof value !== 'string') return value;
+  return value.replace(/^\[([^\]]+)\]\([^)]*\)$/, '$1').replace(/^`|`$/g, '').trim();
+}
 
 /**
  * Machine-readable state carried in the posted comment.
@@ -18,36 +67,57 @@ const MARKER_RE = /<!--\s*ai-review-state:\s*([\s\S]*?)-->/;
  * reversing an earlier judgement, and silently contradicts itself.
  */
 export function parseMarker(text) {
-  const match = MARKER_RE.exec(text ?? '');
-  if (!match) return null;
+  const payload = extractPayload(text ?? '');
+  if (!payload) return null;
 
   let parsed;
   try {
-    parsed = JSON.parse(match[1].trim());
+    parsed = JSON.parse(payload);
   } catch (err) {
     throw new StateError(`state marker อ่านไม่ได้ (JSON เสีย): ${err.message}`);
   }
 
-  if (!parsed.reviewedHeadSha) {
-    throw new StateError('state marker ไม่มี reviewedHeadSha');
+  const sha = unlink(parsed.reviewedHeadSha);
+  if (!sha) throw new StateError('state marker ไม่มี reviewedHeadSha');
+  if (!SHA_RE.test(sha)) {
+    throw new StateError(
+      `state marker มี reviewedHeadSha ที่ไม่ใช่ SHA: ${JSON.stringify(sha)} — ` +
+        `marker เสียหาย ให้รีวิวใหม่ทั้ง PR แทนการรีวิวเฉพาะส่วนเพิ่ม`
+    );
   }
 
   return {
-    reviewedHeadSha: parsed.reviewedHeadSha,
+    reviewedHeadSha: sha,
     reviewVersion: parsed.reviewVersion ?? 1,
     findings: parsed.findings ?? [],
     dismissed: parsed.dismissed ?? [],
   };
 }
 
-export function buildMarker({ reviewedHeadSha, reviewVersion, findings = [], dismissed = [] }) {
+/**
+ * Render the marker for a provider.
+ *
+ * GitHub and GitLab hide an HTML comment, so the state stays invisible there.
+ * Bitbucket Cloud renders neither raw HTML nor HTML comments — the payload
+ * showed up as visible text and its SHA got auto-linked, corrupting the state —
+ * so it gets a fenced code block instead: visible, but inert and never rewritten.
+ */
+export function buildMarker(
+  { reviewedHeadSha, reviewVersion, findings = [], dismissed = [] },
+  provider = 'github'
+) {
   const payload = {
     reviewedHeadSha,
     reviewVersion,
     findings: findings.map((f) => ({ fp: f.fp, id: f.id, sev: f.sev ?? f.severity })),
     dismissed: dismissed.map((d) => ({ fp: d.fp, why: d.why })),
   };
-  return `<!-- ai-review-state:\n${JSON.stringify(payload, null, 2)}\n-->`;
+  const json = JSON.stringify(payload, null, 2);
+
+  if (provider === 'bitbucket') {
+    return ['```json', `// ${MARKER_LABEL} — do not edit`, json, '```'].join('\n');
+  }
+  return `<!-- ${MARKER_LABEL}:\n${json}\n-->`;
 }
 
 function shaReachable(sha, cwd) {

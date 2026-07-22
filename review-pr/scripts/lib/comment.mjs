@@ -1,13 +1,13 @@
 import { strings } from '../../../code-review/scripts/lib/i18n.mjs';
 import { groupBySeverity } from '../../../code-review/scripts/lib/verdict.mjs';
-import { renderFinding, renderScopeLine } from '../../../code-review/scripts/lib/render.mjs';
+import {
+  assertNoHtml,
+  escapeBareTags,
+  renderFinding,
+  renderScopeLine,
+} from '../../../code-review/scripts/lib/render.mjs';
 import { buildMarker } from './state.mjs';
 import { fingerprint } from './compare.mjs';
-
-const TITLES = {
-  en: (version) => (version > 1 ? `AI-assisted Code Review (update ${version})` : 'AI-assisted Code Review'),
-  th: (version) => (version > 1 ? `ผลรีวิวโค้ดโดย AI (รอบที่ ${version})` : 'ผลรีวิวโค้ดโดย AI'),
-};
 
 function severityBlock(heading, findings, lang, split) {
   if (!findings.length) return [];
@@ -49,10 +49,13 @@ export function renderComment(result, options) {
     fullRerunReason = null,
     comparison = null,
     dismissed = [],
+    provider = 'github',
   } = options;
 
   const t = strings(lang);
-  const out = [`## ${TITLES[lang](reviewVersion)}`, ''];
+  const title =
+    reviewVersion > 1 ? `${t.commentTitle} ${t.updateSuffix(reviewVersion)}` : t.commentTitle;
+  const out = [`## ${title}`, ''];
 
   out.push(`**${t.labels.status}:** ${t.commentStatus[result.verdict]}  `);
   out.push(`**${t.labels.reviewedCommit}:** \`${headSha}\`  `);
@@ -84,7 +87,7 @@ export function renderComment(result, options) {
   if (checks.length) {
     out.push(`### ${t.sections.commentChecks}`, '');
     for (const check of checks) {
-      const detail = check.details ? ` — ${check.details}` : '';
+      const detail = check.details ? ` — ${escapeBareTags(check.details)}` : '';
       out.push(`- \`${check.name}\` — ${t.checkStatus[check.status]}${detail}`);
     }
     out.push('');
@@ -93,22 +96,30 @@ export function renderComment(result, options) {
   const limitations = result.limitations ?? [];
   if (limitations.length) {
     out.push(`### ${t.sections.limitations}`, '');
-    for (const limitation of limitations) out.push(`- ${limitation}`);
+    for (const limitation of limitations) out.push(`- ${escapeBareTags(limitation)}`);
     out.push('');
   }
 
   out.push('---', '', t.disclaimer, '');
+
+  // Checked before the marker is appended: the GitHub/GitLab marker is an HTML
+  // comment on purpose, and it is the only HTML allowed anywhere in the output.
+  assertNoHtml(out.join('\n'), 'renderComment');
+
   out.push(
-    buildMarker({
-      reviewedHeadSha: headSha,
-      reviewVersion,
-      findings: (result.findings ?? []).map((f) => ({
-        fp: fingerprint(f),
-        id: f.id,
-        sev: f.severity,
-      })),
-      dismissed: dismissed.map((d) => ({ fp: d.fp ?? fingerprint(d), why: d.why })),
-    })
+    buildMarker(
+      {
+        reviewedHeadSha: headSha,
+        reviewVersion,
+        findings: (result.findings ?? []).map((f) => ({
+          fp: fingerprint(f),
+          id: f.id,
+          sev: f.severity,
+        })),
+        dismissed: dismissed.map((d) => ({ fp: d.fp ?? fingerprint(d), why: d.why })),
+      },
+      provider
+    )
   );
 
   return out.join('\n').replace(/\n{3,}/g, '\n\n').trimEnd() + '\n';

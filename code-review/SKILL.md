@@ -48,6 +48,12 @@ What the language setting does **not** change:
   every other enum stay in English exactly as the schema defines them.
 - Identifiers, file paths, commands, log excerpts, and quoted code stay verbatim.
 - Rule citations keep the source's own wording (`AGENTS.md#layering`).
+- **All headings and field labels stay English**, in every language — the report title,
+  `Verdict`, `Reviewed range`, `Scope`, `Blocking`, `Warnings`, `Suggestions`, `Checks`,
+  `Limitations`, `Recommended change`, `Evidence` — along with the status values
+  (`Changes requested`) and check results (`Passed`, `Failed`). These are the terms the
+  provider UI already shows and the team already says out loud; translating them would
+  give one thing two names. `reportLanguage` changes the sentences, not the frame.
 
 Only prose is translated: `summary`, `title`, `message`, `impact`, `suggestion`,
 `evidence`, `limitations`, and the Markdown report. Write natural Thai, not a literal
@@ -306,8 +312,23 @@ review did not happen" — and it requires a non-empty `limitations`.
 ### What the script enforces
 
 Length caps, ordering, enums, verdict consistency, that a `preExisting` finding is never
-`blocking`, and that each `patch` hunk names a file, carries real `after` code, differs
-from its `before`, and stays inside the 800-character budget. Caps are **per language**: Thai has no inter-word spaces, so the same
+`blocking`, and that the rendered output contains **no raw HTML** — Bitbucket renders
+none of it, so a tag would reach the reader as literal text.
+
+Prose is handled for you: a tag-shaped sequence left bare in `title`, `message`,
+`impact`, `suggestion`, `evidence`, a patch `note`, a check detail or a limitation is
+**wrapped in backticks automatically** — `Promise<void>`, `<ng-container>`, `<UserCard>`,
+`Map<string, List<int>>`. Without that, GitHub strips the tag and the sentence silently
+loses a word, so the backticks are the correct markup rather than a workaround.
+Comparisons that are not tag-shaped (`count < 0`, SQL `<>`) are untouched, escaping twice
+is a no-op, and you can still write the backticks yourself.
+
+**`patch` is never escaped.** Code reaches the reader byte for byte — it renders inside a
+fenced block, where no provider sanitizes anything and the reviewer needs it exact enough
+to apply.
+
+The `RenderError` remains for HTML the **renderer itself** produced, which is a bug in
+this skill rather than something a finding can cause. Caps are **per language**: Thai has no inter-word spaces, so the same
 character budget carries far more content, and its limits are ~60% of the English ones.
 Sentence counts are checked for English only, ignoring periods inside `` `code` `` and
 version numbers.
@@ -350,7 +371,7 @@ shown here so you know what the draft turns into, not as something to reproduce 
    **Recommended change:** Validate the result and return the repository-standard
    not-found response.
 
-   <sub>Checked all three call sites; none guard the result.</sub>
+   _Evidence: checked all three call sites; none guard the result._
 
 ### Warnings
 
@@ -367,7 +388,7 @@ shown here so you know what the draft turns into, not as something to reproduce 
 ```
 
 The renderer handles the rules that used to live here — `message` and `impact` as
-separate sentences rather than a wall of text, `evidence` last in `<sub>` tags, `Scope`
+separate sentences rather than a wall of text, `evidence` last in italics, `Scope`
 only when coverage was partial, empty sections omitted.
 
 Return the report to the caller or user — **never post it anywhere.**

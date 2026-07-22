@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { ArgsError, parseArgs } from './lib/args.mjs';
 import { ValidationError, validateDraft } from './lib/validate.mjs';
 import { deriveVerdict, renumber } from './lib/verdict.mjs';
-import { renderReport } from './lib/render.mjs';
+import { RenderError, renderReport } from './lib/render.mjs';
 import { LANGS } from './lib/i18n.mjs';
 
 const SPEC = {
@@ -76,7 +76,7 @@ const COMMANDS = {
   render: runRender,
 };
 
-const KNOWN_ERRORS = [ArgsError, ValidationError];
+const KNOWN_ERRORS = [ArgsError, ValidationError, RenderError];
 
 function main() {
   const [, , command, ...rest] = process.argv;
