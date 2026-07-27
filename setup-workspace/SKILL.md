@@ -22,7 +22,36 @@ Look at the current repo to understand its structure and tech stack.
   just the root. Their presence means this is a re-run, which puts step 4 in update mode
   instead of fresh-write mode; carry the finding forward rather than noting it and
   moving on
-- has an `.editorconfig` at the repo root already
+- **the formatting contract** — all four checks, not just the first:
+  - is there an `.editorconfig` at the repo root, and does its `[*]` block declare
+    `end_of_line`
+  - is there a `.gitattributes` at the repo root, and does it declare `text=auto` or an
+    `eol=` value
+  - is there a `.vscode/settings.json`, and does it set `editor.detectIndentation` and
+    `files.eol` — both default to values that quietly override whatever `.editorconfig`
+    declares
+- is there a `.gitignore` at the repo root, and are any files **already tracked** that
+  step 6's rules would ignore — `git ls-files -i -c --exclude-standard` lists exactly
+  those. Report them; step 6 explains why they are the user's to untrack, not this
+  skill's
+  - `git config --show-origin --get core.autocrlf` — on Windows this is usually `true`,
+    inherited from the system config Git itself ships, which nobody set deliberately and
+    nobody thinks to look at
+  - if `.editorconfig` declares an ending and `.gitattributes` is missing, establish
+    whether the working tree has already diverged: compare
+    `git cat-file blob HEAD:<path> | wc -c` against the on-disk size of that same tracked
+    text file. Exactly one extra byte per line means CR is being added at checkout
+
+  Use `git cat-file blob` for that last check and nothing else. `git show <rev>:<path>`
+  and `git grep <rev>` apply working-tree conversion and will report CR that is not in
+  the committed blob — reading those instead is how this gets misdiagnosed as "the repo
+  was committed with CRLF," which sends the next person after the history rather than
+  the checkout.
+
+  Carry the result into step 2's findings. A repo that declares LF, has no
+  `.gitattributes`, and sits on a machine that converts at checkout fails its own
+  formatting rules on every clone while its history stays perfectly clean — which is
+  exactly why nobody notices until a formatter is finally run.
 - check for stack signals per top-level folder (in case the repo is a mono-repo):
 
 | Signal                                  | Stack     | Template                  |
@@ -247,14 +276,23 @@ Do not drop a section just because the surveyed repo happens not to need it yet
 `For Typescript`, `UI & Design System`, and `Loading Indicator` when the stack genuinely
 doesn't apply (i.e. it's not React or Angular).
 
-### 5. Generate `.editorconfig`
+### 5. Generate the formatting contract
 
-Unlike the system-prompt file, `.editorconfig` is written **once at the repo root only**
-— even in a mono-repo. Its glob rules (`[*.go]`, `[*.{ts,tsx}]`, etc.) already match
-files anywhere in the tree from a single `root = true` file; there's no need for one per
-sub-app the way `CLAUDE.md`/`AGENTS.md` need one per sub-app.
+One set of rules, three files, because three different things have to obey them and none
+of them reads the others' file. `.editorconfig` states the rules for formatters and CI,
+`.gitattributes` makes Git enforce the line-ending half at checkout, and `.vscode/`
+makes the human's editor stop overriding both. Ship only the first and the rules become
+decoration: the repo declares `end_of_line = lf` while every Windows checkout writes
+CRLF and the status bar reads `Spaces: 2` — all three statements true at once, nothing
+visibly broken, and the repo failing its own formatting gate from the day it was created.
 
-Build it from `templates/editorconfig/`:
+Unlike the system-prompt file, all three are written **once at the repo root only** —
+even in a mono-repo. Their patterns (`[*.go]`, `*.bat`, etc.) already match files
+anywhere in the tree from a single root file, and VS Code applies `.vscode/settings.json`
+to the whole workspace; there's no need for one per sub-app the way
+`CLAUDE.md`/`AGENTS.md` need one per sub-app.
+
+**`.editorconfig`** — build it from `templates/editorconfig/`:
 
 1. Start with `_base.editorconfig` (charset, line endings, base indent, the `[*.md]`
    override) — this part never changes.
@@ -266,16 +304,117 @@ Build it from `templates/editorconfig/`:
    contributes nothing, which is correct, not a gap).
 3. Write the combined result to `.editorconfig` at the repo root.
 
-**If `.editorconfig` already exists** (flagged in step 1): do not overwrite it silently.
-Show the user what this would add or change and confirm before touching it — an
-existing `.editorconfig` may encode project-specific decisions (e.g. a team that
-deliberately chose tabs) that this skill has no way to know about.
+**`.gitattributes`** — same shape, from `templates/gitattributes/`:
 
-`.editorconfig` only helps human contributors — an AI agent has no built-in mechanism to
-auto-load it the way an IDE does. That's why every template also has its own
-`### Editor Config` subsection in `## Coding Convention` (resolved from
-`_shared/editor-config.md`): it restates the same indent rule in prose, directly in the
-context an agent actually reads, instead of relying on it to go open a config file. Keep
-both in sync — if you change one stack's indent convention, change it in both the
-`templates/editorconfig/<stack>.editorconfig` override and `_shared/editor-config.md`'s
-matching block.
+1. Start with `_base.gitattributes` (`* text=auto eol=lf`, the CRLF exceptions for
+   Windows script hosts, the binary guards). This is the part that actually enforces:
+   a `.gitattributes` entry outranks a contributor's `core.autocrlf`, so it holds on
+   every machine without anyone editing their global Git config.
+2. For every stack confirmed in step 2 Section A, append `<stack>.gitattributes` if one
+   exists. None do today. Don't add one speculatively — a stack earns an override only
+   when a tool in that stack demonstrably rewrites a file's endings behind Git's back,
+   not because it might.
+3. Write the combined result to `.gitattributes` at the repo root.
+
+**`.vscode/`** — copy `templates/vscode/settings.json` and `templates/vscode/extensions.json`
+verbatim into a `.vscode/` folder at the repo root. No per-stack variants; these keys are
+the same for every stack.
+
+This exists because VS Code honours neither of the two files above on its own. It has no
+native `.editorconfig` support — that needs the `EditorConfig.EditorConfig` extension,
+which `extensions.json` recommends but cannot install — and `editor.detectIndentation`
+defaults to `true`, meaning VS Code infers indentation from a file's existing content and
+overrides whatever was configured. A repo can declare 4 spaces in two places and still
+show `Spaces: 2` in the status bar the moment one file happens to be indented with 2.
+`settings.json` turns that inference off, so the declared rules hold with or without the
+extension.
+
+Keep this file to formatting keys only. Themes, font sizes, and machine-specific paths
+belong in a contributor's own user settings, not in a file the repo commits for everyone.
+
+**And keep it to keys that govern what a contributor types or creates — never keys that
+rewrite a file they merely opened.** `files.trimTrailingWhitespace` and
+`files.insertFinalNewline` are the ones to watch: VS Code applies both to the entire
+document on save, so a legacy file with trailing whitespace on fifty lines produces a
+fifty-line diff after a one-line edit. `.editorconfig` declares those rules and CI
+enforces them; committing them to `.vscode/settings.json` as well would turn every
+incidental save into a reformat the contributor never asked for. Anything added to this
+file later gets the same test: does it change a line nobody touched?
+
+**If any of these files already exist** (flagged in step 1): do not overwrite silently.
+Show the user what this would add or change and confirm before touching it. An existing
+`.editorconfig` may encode project-specific decisions (e.g. a team that deliberately
+chose tabs), an existing `.gitattributes` may encode ones this skill has no way to know
+about, and an existing `.vscode/settings.json` almost certainly holds keys beyond
+formatting — merge into it, never replace it.
+
+**If step 1 found the mismatch on an existing repo** — declares a line ending, has no
+`.gitattributes`, sits on a machine that converts at checkout — writing `.gitattributes`
+fixes every future checkout and nothing else. Files already on disk keep the endings they
+have until someone renormalises the repository, and that rewrites tracked files across
+the whole tree. **That is the user's operation to run, not this skill's.** Report the
+condition in step 2's findings, say plainly that the working tree still needs
+renormalising, and stop. Do not run it, do not offer to run it as part of this skill, and
+never reformat files to make a formatter stop complaining.
+
+**Keep the four declarations in sync.** Indentation and line endings are each stated in
+four places, one per audience, and they must never disagree:
+
+| Source                                       | Audience                            |
+| ---------------------------------------------- | ----------------------------------- |
+| `templates/editorconfig/_base.editorconfig`    | formatters and CI                   |
+| `templates/gitattributes/_base.gitattributes`  | Git, at checkout and at commit      |
+| `templates/vscode/settings.json`               | the human's editor                  |
+| `templates/_shared/editor-config.md` (prose)   | the agent reading the system prompt |
+
+Change one, change all four. A stack's indent convention additionally lives in
+`templates/editorconfig/<stack>.editorconfig`, which changes with them.
+
+Four copies of one number is a real cost, and it is deliberate. Each consumer reads a
+different file and ignores the other three: Git never reads `.editorconfig`, VS Code
+never reads `.gitattributes`, and an agent reads none of them. A single source of truth
+here would mean one of the four audiences silently going unconfigured — which is exactly
+the failure this whole step exists to prevent.
+
+That last row is why every template also carries an `### Editor Config` subsection in
+`## Coding Convention` (resolved from `_shared/editor-config.md`): an agent has no
+built-in mechanism to auto-load `.editorconfig` the way an IDE does, so the rules are
+restated in prose, directly in the context it actually reads.
+
+### 6. Generate `.gitignore`
+
+Written **once at the repo root only**, same as step 5 — even in a mono-repo, since
+`node_modules/` and `bin/` match at any depth from a root file.
+
+Build it from `templates/gitignore/`:
+
+1. Start with `_base.gitignore` — secrets, `*.local.*`, editor and OS cruft, logs. It
+   also carries the `.vscode/` allowlist that keeps step 5's two committed files
+   tracked while ignoring everything personal in that folder. If you ever change what
+   step 5 writes into `.vscode/`, change that allowlist with it.
+2. For every stack confirmed in step 2 Section A, append `<stack>.gitignore`. All four
+   stacks have one, unlike the editorconfig overrides.
+3. Write the combined result to `.gitignore` at the repo root.
+
+The goal is a curated baseline someone can read, not the exhaustive generated list
+(`dotnet new gitignore` emits ~485 lines) that nobody reviews and everybody copies. If
+the project genuinely needs a rule that isn't here, add it to the project — and if it's
+a rule every project of that stack needs, add it to the template instead.
+
+**In a mono-repo, read the combined result before writing it.** Appending two stacks'
+files can produce a rule that over-reaches into the other's tree — Go's `*.so` and
+`bin/` against a .NET `bin/`, for instance. Anything ambiguous gets scoped to its
+sub-app path (`backend/bin/`) rather than left global.
+
+**If `.gitignore` already exists** (flagged in step 1): do not overwrite it. Show the
+user which of these rules are missing from theirs and let them choose — an existing
+`.gitignore` is usually the generated list from the stack's own tooling, and replacing
+it wholesale trades a reviewed file for a shorter one that may drop a rule they rely on.
+Adding the handful of genuinely missing lines is almost always the better change.
+
+**A new rule never untracks a file that is already committed.** If step 1 found tracked
+files the new rules would ignore, report them and stop. Untracking is
+`git rm --cached`, which produces a deletion in the diff and breaks anyone who was
+relying on that file being in the repo — the user's decision and the user's command to
+run, exactly as with renormalising in step 5. Never run it, and never present it as
+part of finishing this step.

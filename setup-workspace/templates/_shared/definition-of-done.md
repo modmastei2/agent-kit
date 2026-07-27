@@ -12,6 +12,7 @@ A task is complete only when
 
 - Build succeeds
 - Tests pass
+- Formatting and any configured analyzers pass, verified in CI and not only locally
 - Existing behavior is preserved
 - Requested functionality is implemented
 - No unnecessary files are added

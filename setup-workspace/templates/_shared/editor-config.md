@@ -17,6 +17,17 @@ edit; don't infer indentation by eyeballing surrounding code.
 - Indent: 4 spaces (repo-wide default)
 - Line endings: LF, UTF-8, final newline required
 - Trailing whitespace trimmed (except Markdown, where it's meaningful for line breaks)
+- Line endings are enforced by `.gitattributes` at the repo root, not by your local Git
+  settings — never "fix" them by hand, and never change `core.autocrlf` to work around a
+  complaint from a formatter
+- `.vscode/settings.json` is committed and pins the same rules for the editor. It is not
+  personal configuration — do not add themes, fonts, or machine-specific paths to it, and
+  do not relax its formatting keys to match a file that is already wrong
+
+If a formatter reports a line-ending or whitespace failure across files you did not
+touch, that is a repository configuration problem, not a code problem. Report it and
+leave it alone. Do not answer it with a repo-wide reformat, and never let unrelated
+reformatted files ride along in a change.
 
 ## Go
 
