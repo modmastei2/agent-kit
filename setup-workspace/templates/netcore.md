@@ -201,6 +201,7 @@ This file provides guidance to AI coding agents (Claude Code, Codex, etc.) when 
 dotnet restore
 dotnet build
 dotnet test
+dotnet format --verify-no-changes   # enforces .editorconfig; must pass in CI too
 ```
 
 ## Testing & Quality
