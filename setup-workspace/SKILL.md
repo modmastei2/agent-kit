@@ -352,10 +352,29 @@ formatting — merge into it, never replace it.
 `.gitattributes`, sits on a machine that converts at checkout — writing `.gitattributes`
 fixes every future checkout and nothing else. Files already on disk keep the endings they
 have until someone renormalises the repository, and that rewrites tracked files across
-the whole tree. **That is the user's operation to run, not this skill's.** Report the
-condition in step 2's findings, say plainly that the working tree still needs
-renormalising, and stop. Do not run it, do not offer to run it as part of this skill, and
-never reformat files to make a formatter stop complaining.
+the whole tree. **That is the user's operation to run, not this skill's — never execute
+any command in this block.** Report the condition in step 2's findings and print the
+exact command block below for the user to copy and run themselves:
+
+```bash
+git add --renormalize .
+git status   # review before committing — this touches every mismatched file
+git commit -m "Normalize line endings"
+```
+
+Add a note directly beneath the block: everyone else with an existing local clone must
+also refresh their working tree after this commit lands, or the same dialog keeps
+appearing on their machine even though the repo itself is now normalised —
+
+```bash
+git rm -r --cached .
+git reset --hard HEAD
+```
+
+(a fresh `git clone` works too, and is simpler for anyone without local uncommitted
+work). Do not run any of these commands, do not offer to run them as part of this skill,
+and never reformat files to make a formatter stop complaining — printing the block is the
+full extent of this skill's involvement.
 
 **Keep the four declarations in sync.** Indentation and line endings are each stated in
 four places, one per audience, and they must never disagree:
