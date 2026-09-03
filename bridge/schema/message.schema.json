@@ -14,13 +14,13 @@
     },
     "from": {
       "type": "string",
-      "enum": ["claude", "codex"],
-      "description": "Agent that sent this message."
+      "minLength": 1,
+      "description": "Name of the agent that sent this message, e.g. \"claude\", \"codex\", \"chatgpt\", \"gemini\"."
     },
     "to": {
       "type": "string",
-      "enum": ["claude", "codex"],
-      "description": "Agent this message is addressed to."
+      "minLength": 1,
+      "description": "Name of the agent this message is addressed to."
     },
     "type": {
       "type": "string",

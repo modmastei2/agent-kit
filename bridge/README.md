@@ -1,6 +1,6 @@
 # Agent Bridge
 
-Lets Claude Code and Codex hand work to each other via `/bridge`, without a human relaying prompts between two chat windows. No server or daemon — just a mailbox of plain JSON files plus this skill on each side.
+Lets CLI agents (Claude Code, Codex, or any other agent running this skill) hand work to each other via `/bridge`, without a human relaying prompts between chat windows. No server or daemon — just a mailbox of plain JSON files plus this skill on each side. Agent identities are free-form names, not a fixed pair.
 
 - **`SKILL.md`** — the operating instructions an agent follows when `/bridge` runs.
 - **`scripts/bridge.js`** — the CLI backing it (`send`, `check`, `claim`, `reply`, `complete`, `wait`). Plain Node.js, zero dependencies.

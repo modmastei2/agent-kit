@@ -1,6 +1,6 @@
 ---
 name: bridge
-description: Send work to the other agent (Claude Code <-> Codex) or check for a reply, via the Agent Bridge mailbox, so they can hand tasks to each other without a human relaying prompts. Trigger on "/bridge" or "$bridge", or when the user asks to have the other agent implement, review, or fix something.
+description: Send work to another agent (any CLI agent participating in this project's mailbox — Claude Code, Codex, or others) or check for a reply, via the Agent Bridge mailbox, so agents can hand tasks to each other without a human relaying prompts. Trigger on "/bridge" or "$bridge", or when the user asks to have another agent implement, review, or fix something.
 ---
 
 # Agent Bridge (`/bridge`)
@@ -15,7 +15,7 @@ Full protocol write-up (design rationale, not needed to operate this skill) live
 
 The mailbox lives at `<project>/.agent-bridge/mailbox/` inside whatever project you're currently working in — pass `--project "<cwd>"` (defaults to current working directory) so mail is scoped to the right project.
 
-**Work out who "you" are first**: if you're Claude Code, `--as`/`--from` is `claude` and the other side is `codex`. If you're Codex, it's the reverse. The rest of this skill says "you" / "the other agent" — substitute accordingly.
+**Agent names are free-form, not a fixed pair.** `--as`/`--from`/`--to` accept any non-empty string — `claude`, `codex`, `chatgpt`, `gemini`, whatever identifies each participant consistently. There's no registry to update to add a new agent; any CLI capable of running `bridge.js` and picking a name can join the same mailbox. **Work out who "you" are first**: use a short, stable, lowercase name for `--as`/`--from` (match what other agents already use for you if this project has bridged before — check recent messages in the mailbox, or ask the user). Figure out the intended recipient's name the same way — ask the user if it's not obvious from context. The rest of this skill says "you" / "the other agent" — substitute your name and the recipient's name accordingly.
 
 ## Default behavior (`/bridge` with no other context): check inbox and do incoming work
 
@@ -51,9 +51,9 @@ The mailbox lives at `<project>/.agent-bridge/mailbox/` inside whatever project 
      node "<skill-dir>/scripts/bridge.js" wait --project "<cwd>" --as claude --task-id "<taskId>" --timeout-ms 1800000 --interval-ms 5000
      ```
      This is genuine fire-and-forget — keep working with the user on other things; you'll be notified when it resolves.
-   - **If you're Codex**: you have no native "wake me when done." Run a **bounded poll**, not an indefinite wait:
+   - **If you're any other agent** (Codex, or otherwise) without a native "wake me when done": run a **bounded poll**, not an indefinite wait:
      ```bash
-     node "<skill-dir>/scripts/bridge.js" wait --project "<cwd>" --as codex --task-id "<taskId>" --timeout-ms 60000 --interval-ms 3000
+     node "<skill-dir>/scripts/bridge.js" wait --project "<cwd>" --as <you> --task-id "<taskId>" --timeout-ms 60000 --interval-ms 3000
      ```
      This blocks for up to ~60 seconds. If it returns a reply, show it to the user. If it returns `{"status":"timeout",...}`, tell the user it hasn't replied yet and they can run `/bridge` again later — don't retry in a loop yourself.
 

@@ -13,7 +13,6 @@ const fs = require("node:fs");
 const path = require("node:path");
 const crypto = require("node:crypto");
 
-const AGENTS = ["claude", "codex"];
 const MESSAGE_TYPES = ["ask", "delegate", "review", "result", "status", "error"];
 const MESSAGE_KEYS = ["id", "from", "to", "type", "content", "context", "taskId", "projectPath", "createdAt"];
 const CONTEXT_KEYS = ["files", "diff", "instructions"];
@@ -35,8 +34,8 @@ function validateMessage(message) {
   if (extra.length > 0) errors.push(`unexpected propert${extra.length === 1 ? "y" : "ies"}: ${extra.join(", ")}`);
 
   if (!isNonEmptyString(message.id)) errors.push("id must be a non-empty string");
-  if (!AGENTS.includes(message.from)) errors.push(`from must be one of ${AGENTS.join(", ")}`);
-  if (!AGENTS.includes(message.to)) errors.push(`to must be one of ${AGENTS.join(", ")}`);
+  if (!isNonEmptyString(message.from)) errors.push("from must be a non-empty string (agent name)");
+  if (!isNonEmptyString(message.to)) errors.push("to must be a non-empty string (agent name)");
   if (!MESSAGE_TYPES.includes(message.type)) errors.push(`type must be one of ${MESSAGE_TYPES.join(", ")}`);
   if (!isNonEmptyString(message.content)) errors.push("content must be a non-empty string");
   if (!isNonEmptyString(message.taskId)) errors.push("taskId must be a non-empty string");
