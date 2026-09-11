@@ -1,5 +1,6 @@
 ---
 name: review-pr
+version: 0.1.0
 description: Orchestrate an AI-assisted review of a Pull Request or Merge Request on GitHub, GitLab, or Bitbucket Cloud. Use when the user asks to review a PR/MR by number, list open PRs awaiting review, re-review a PR after new commits, or post a review comment to a Git provider. All code findings come from the code-review skill.
 argument-hint: "[init | list | <id>] · [--base <branch>] · [--provider github|gitlab|bitbucket] · [--lang en|th] · [--review-updates] · [--post] · [--dry-run] · [--force (init)]"
 ---

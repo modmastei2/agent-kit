@@ -1,5 +1,6 @@
 ---
 name: to-note
+version: 0.1.0
 description: Capture input into the personal Obsidian vault at D:\Projects\Personal\obsidian-note, routed to Inbox/Projects/Knowledge/People with the matching index updated. Trigger on "เก็บลง note", "เก็บลง vault", "จดลง note", "บันทึกลง vault", or /to-note. Do NOT trigger on a bare "จด"/"จำไว้" — that means a temp in-conversation note, not vault persistence.
 argument-hint: "<content to capture>"
 ---

@@ -1,5 +1,6 @@
 ---
 name: code-review
+version: 0.1.0
 description: Review source code changes independently of any Git hosting provider. Use when the user asks to review a pull request, working-tree changes, staged changes, a commit range, specific files, or a directory, or when another skill (e.g. review-pr) needs a structured review result.
 argument-hint: "[--working-tree] · [--staged] · [--diff <base>...<head>] · [--commits <a>..<b>] · [--files <path> ...] · [--path <dir>] · [--input <file.json>] · [--lang en|th]"
 ---

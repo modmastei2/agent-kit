@@ -1,5 +1,6 @@
 ---
 name: jira-tracker
+version: 0.1.0
 description: A skill that allows you to interact with Jira Cloud REST API workflow, Use when the user asks to list, create, view, move, transition, or update Jira issues
 disable-model-invocation: true
 argument-hint: "[init] · [list --all|--me] [--status <status>] [--sprint] · [create --project <key> --topic <topic> --description <desc>] · [view --id <key>] · [move --id <key> --transition <status>] · [pull --id <key>]"

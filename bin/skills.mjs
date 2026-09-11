@@ -41,9 +41,16 @@ function isInstalled(name) {
   return fs.existsSync(link);
 }
 
+function skillVersion(name) {
+  const text = fs.readFileSync(path.join(repoRoot, name, "SKILL.md"), "utf8");
+  const match = text.match(/^version:\s*(\S+)/m);
+  return match ? match[1] : "?";
+}
+
 function cmdList() {
   for (const name of listSkillNames()) {
-    console.log(`${isInstalled(name) ? "[installed]" : "[missing]  "} ${name}`);
+    const status = isInstalled(name) ? "[installed]" : "[missing]  ";
+    console.log(`${status} ${name}@${skillVersion(name)}`);
   }
 }
 

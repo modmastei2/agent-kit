@@ -1,5 +1,6 @@
 ---
 name: setup-workspace
+version: 0.1.0
 description: Generate or update the AI agent system-prompt file (CLAUDE.md/AGENTS.md) documenting this repo's stack and conventions — works for both an existing codebase and a brand-new/empty one.
 disable-model-invocation: true
 ---
