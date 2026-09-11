@@ -13,6 +13,21 @@ Examples:
 - `fix(setup-workspace): route design tokens through Tailwind utilities`
 - `docs: add commit message convention`
 
+## Skill Versioning
+
+Every `SKILL.md` declares `version: <major>.<minor>.<patch>` in its frontmatter. Whenever
+a skill's files change, bump that version before committing — compare against the
+current value and pick the bump by scope:
+
+- **major**: breaking change — command/flag renamed or removed, behavior changed in a
+  way that invalidates existing usage.
+- **minor**: new capability added, backward-compatible (new command, new flag, new
+  workflow branch).
+- **patch**: fix, wording/doc tweak, internal refactor with no behavior change.
+
+Skip the bump only for changes that touch no skill (e.g. this file, `README.md`,
+`bin/skills.mjs`).
+
 ## Skill Installation
 
 This repo is the source of truth for skills, but editing a file here does not make it live — Claude Code loads skills from `~/.claude/skills/<name>`, which is a symlink to `~/.agents/skills/<name>` (a plain global folder, not a git repo).
