@@ -1,8 +1,25 @@
 # Skills
 
 Source of truth for Claude Code skills. Editing a file here does not make it
-live — see [Skill Installation](CLAUDE.md#skill-installation) in `CLAUDE.md`
-for how a change here gets copied to `~/.agents/skills/<name>`.
+live — Claude Code loads skills from `~/.claude/skills/<name>`, which is a
+symlink to `~/.agents/skills/<name>`.
+
+## Install
+
+A small CLI (`bin/skills.mjs`, no dependencies, no npm publish needed) does
+the copy + symlink step for you, reading the file list straight from git so
+only committed files get installed:
+
+```bash
+node bin/skills.mjs list            # show what's installed
+node bin/skills.mjs add <name>      # install/update one skill
+```
+
+Or via `npx` without installing anything globally:
+
+```bash
+npx . add <name>
+```
 
 Skills are split below by how they get invoked:
 

@@ -1,0 +1,10 @@
+{
+  "name": "skills-cli",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Install skills from this repo into ~/.agents/skills (and symlink them under ~/.claude/skills).",
+  "type": "module",
+  "bin": {
+    "skills": "bin/skills.mjs"
+  }
+}
