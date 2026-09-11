@@ -1,0 +1,23 @@
+# Hidden folders (.claude, .agents, .agent-bridge, etc.) — local/agent tooling state,
+# never tracked. .git is unaffected since git ignores itself regardless.
+.*/
+
+# Secrets and environment
+.env
+.env.*
+!.env.example
+
+# Local-only overrides, any stack, any extension:
+# config.local.json, appsettings.local.json, etc.
+*.local.*
+*.local
+
+# Editor and OS
+.DS_Store
+Thumbs.db
+desktop.ini
+*.swp
+*~
+
+# Logs
+*.log
