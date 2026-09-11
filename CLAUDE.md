@@ -19,8 +19,9 @@ This repo is the source of truth for skills, but editing a file here does not ma
 
 When a skill changes, always follow this order:
 
-1. Edit the skill's files in this repo (`<skill-name>/`).
-2. Copy the changed files to `~/.agents/skills/<skill-name>/`, overwriting what's there.
-3. Verify `~/.claude/skills/<skill-name>` is a symlink that resolves to `~/.agents/skills/<skill-name>` (it should already be set up this way — this step is just a sanity check, not a step that creates the symlink).
+1. Edit the skill's files in this repo (`<skill-name>/`) and commit them — `add` only installs git-tracked files.
+2. Run `node bin/skills.mjs add <skill-name>` (or `npx . add <skill-name>`) from the repo root. It copies the skill's tracked files into `~/.agents/skills/<skill-name>/`, overwriting what's there, and creates the `~/.claude/skills/<skill-name>` symlink if it doesn't already exist.
+
+Run `node bin/skills.mjs list` to see which skills are installed.
 
 Never edit `~/.agents/skills/<name>` or `~/.claude/skills/<name>` directly and treat that as done — those aren't tracked by git, so the change would be lost from version history and out of sync with the repo.
