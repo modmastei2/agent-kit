@@ -1,6 +1,6 @@
 ---
 name: bridge
-version: 0.1.0
+version: 0.1.1
 description: Send work to another agent (any CLI agent participating in this project's mailbox — Claude Code, Codex, or others) or check for a reply, via the Agent Bridge mailbox, so agents can hand tasks to each other without a human relaying prompts. Trigger on "/bridge" or "$bridge", or when the user asks to have another agent implement, review, or fix something.
 ---
 
@@ -63,4 +63,14 @@ The mailbox lives at `<project>/.agent-bridge/mailbox/` inside whatever project 
 The message is `type: "result"` or `"review"`. Summarize what the other agent did/found for the user. If it claims work is done, **review the diff yourself before telling the user it's good** — this is the review step in the loop, not an automatic pass.
 
 - **If it looks wrong**: send a `review`-type reply back describing what to fix (`send`/`reply` with `--to <other> --type review --task-id <same taskId>`), tell the user to `/bridge` on the other side again to pick up the fix request, then wait for the next reply as above.
-- **If it looks right**: tell the user it's done. Don't chain any further automatic action — one command in, one response out, then stop, per the Agent Bridge protocol.
+- **If it looks right**: close out the reply message before telling the user it's done — otherwise it sits unresolved in the mailbox forever.
+  - If you found it via `wait`, it's already claimed (`wait` claims automatically) — just mark it done:
+    ```bash
+    node "<skill-dir>/scripts/bridge.js" complete --project "<cwd>" --id "<the reply's id>"
+    ```
+  - If you found it via `check`, it's still unclaimed — claim it first, then mark it done:
+    ```bash
+    node "<skill-dir>/scripts/bridge.js" claim --project "<cwd>" --id "<the reply's id>"
+    node "<skill-dir>/scripts/bridge.js" complete --project "<cwd>" --id "<the reply's id>"
+    ```
+  Then tell the user it's done. Don't chain any further automatic action beyond that — one command in, one response out, then stop, per the Agent Bridge protocol.
