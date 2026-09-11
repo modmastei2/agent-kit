@@ -1,5 +1,10 @@
 # CLAUDE.md
 
+## Commit policy
+
+Never commit automatically. Always wait for the user to explicitly ask for a commit,
+even after finishing edits, bumping a skill's version, or running `bin/skills.mjs add`.
+
 ## Commit messages
 
 Use semantic commit messages: `<type>(<scope>): <description>`
