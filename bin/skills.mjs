@@ -28,7 +28,23 @@ function listSkillNames() {
     .sort();
 }
 
+function walkFiles(dir, base = dir) {
+  const out = [];
+  for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+    const full = path.join(dir, e.name);
+    if (e.isDirectory()) out.push(...walkFiles(full, base));
+    else out.push(path.relative(base, full).split(path.sep).join("/"));
+  }
+  return out;
+}
+
 function trackedFiles(name) {
+  // Plain git checkout: ask git for the tracked file list. A checkout with no
+  // .git (e.g. installed via `npx github:owner/repo`, which ships a tarball
+  // without .git) already only contains what was committed, so just walk it.
+  if (!fs.existsSync(path.join(repoRoot, ".git"))) {
+    return walkFiles(path.join(repoRoot, name)).map((f) => `${name}/${f}`);
+  }
   const out = execFileSync("git", ["ls-files", "--", name], {
     cwd: repoRoot,
     encoding: "utf8",
