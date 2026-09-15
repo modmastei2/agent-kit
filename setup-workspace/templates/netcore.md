@@ -74,7 +74,7 @@ This file provides guidance to AI coding agents (Claude Code, Codex, etc.) when 
 ### Naming
 
 | Pattern            | Use for                                             |
-| ------------------ | ---------------------------------------------- |
+| ------------------ | ---------------------------------------------------- |
 | `PascalCase`        | Classes, methods, properties, public fields, constants |
 | `camelCase`         | Local variables, method parameters                     |
 | `_camelCase`        | Private fields                                          |
@@ -242,10 +242,6 @@ Unit test required for:
 ## Security Rules
 
 <!-- resolve: _shared/security-rules.md (Plain + .Net Core) -->
-
-## Commit Message
-
-<!-- resolve: _shared/commit-message.md (Plain) -->
 
 ## Definition of Done
 

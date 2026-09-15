@@ -1,205 +1,163 @@
 ---
 name: setup-workspace
-version: 0.1.0
+version: 0.3.0
 description: Generate or update the AI agent system-prompt file (CLAUDE.md/AGENTS.md) documenting this repo's stack and conventions — works for both an existing codebase and a brand-new/empty one.
 disable-model-invocation: true
 ---
 
 # Setup Workspace
 
-Generate or update the system-prompt file (`CLAUDE.md`/`AGENTS.md`) that documents this
-repo's tech stack and coding conventions for AI coding agents. This does NOT scaffold the
-project itself — it doesn't run stack init commands (`npm create vite`, `dotnet new`,
-`go mod init`) or create source folders. It writes documentation, for an existing repo or
-a brand-new one.
+Generate or update the system-prompt file (`CLAUDE.md`/`AGENTS.md`) documenting this
+repo's stack and conventions for AI coding agents. This does NOT scaffold the project —
+no init commands, no source folders — it writes documentation only, for an existing repo
+or a brand-new one.
 
 ## Process
 
 ### 1. Explore
 
-Look at the current repo to understand its structure and tech stack.
+Look at the repo's structure and tech stack.
 
-- has any `AGENTS.md` or `CLAUDE.md` at the repo — record **every** location found, not
-  just the root. Their presence means this is a re-run, which puts step 4 in update mode
-  instead of fresh-write mode; carry the finding forward rather than noting it and
-  moving on
-- **the formatting contract** — all four checks, not just the first:
-  - is there an `.editorconfig` at the repo root, and does its `[*]` block declare
-    `end_of_line`
-  - is there a `.gitattributes` at the repo root, and does it declare `text=auto` or an
-    `eol=` value
-  - is there a `.vscode/settings.json`, and does it set `editor.detectIndentation` and
-    `files.eol` — both default to values that quietly override whatever `.editorconfig`
-    declares
-- is there a `.gitignore` at the repo root, and are any files **already tracked** that
-  step 6's rules would ignore — `git ls-files -i -c --exclude-standard` lists exactly
-  those. Report them; step 6 explains why they are the user's to untrack, not this
-  skill's
+- Existing `AGENTS.md`/`CLAUDE.md` at **any** location (not just root) → re-run, so step 4
+  is update mode, not fresh-write. Carry this forward, don't just note it.
+- Formatting contract, all four checks:
+  - `.editorconfig` at root — does `[*]` declare `end_of_line`?
+  - `.gitattributes` at root — does it declare `text=auto` or `eol=`?
+  - `.vscode/settings.json` — does it set `editor.detectIndentation`/`files.eol`? Both
+    default to values that silently override `.editorconfig`.
   - `git config --show-origin --get core.autocrlf` — on Windows this is usually `true`,
-    inherited from the system config Git itself ships, which nobody set deliberately and
-    nobody thinks to look at
-  - if `.editorconfig` declares an ending and `.gitattributes` is missing, establish
-    whether the working tree has already diverged: compare
-    `git cat-file blob HEAD:<path> | wc -c` against the on-disk size of that same tracked
-    text file. Exactly one extra byte per line means CR is being added at checkout
+    inherited from Git's own system config, not set by anyone deliberately.
+  - If `.editorconfig` declares an ending but `.gitattributes` is missing, check whether
+    the tree has already diverged: `git cat-file blob HEAD:<path> | wc -c` vs. the on-disk
+    size of that tracked text file — one extra byte per line means CR is added at
+    checkout. Use `git cat-file blob` only; `git show`/`git grep` apply working-tree
+    conversion and misdiagnose this as "committed with CRLF."
+  - `.gitignore` at root — any already-**tracked** files the step 6 rules would ignore?
+    `git ls-files -i -c --exclude-standard` lists them; report, don't untrack (step 6).
+- Stack signals per top-level folder (mono-repo aware):
 
-  Use `git cat-file blob` for that last check and nothing else. `git show <rev>:<path>`
-  and `git grep <rev>` apply working-tree conversion and will report CR that is not in
-  the committed blob — reading those instead is how this gets misdiagnosed as "the repo
-  was committed with CRLF," which sends the next person after the history rather than
-  the checkout.
+| Signal | Stack | Template |
+| --- | --- | --- |
+| `package.json` deps on `react` | React | `templates/react.md` |
+| `package.json` deps on `@angular/core` | Angular | `templates/angular.md` |
+| `*.csproj` / `*.sln` | .NET Core | `templates/netcore.md` |
+| `go.mod` | Go | `templates/go.md` |
 
-  Carry the result into step 2's findings. A repo that declares LF, has no
-  `.gitattributes`, and sits on a machine that converts at checkout fails its own
-  formatting rules on every clone while its history stays perfectly clean — which is
-  exactly why nobody notices until a formatter is finally run.
-- check for stack signals per top-level folder (in case the repo is a mono-repo):
-
-| Signal                                  | Stack     | Template                  |
-| ----------------------------------------- | --------- | --------------------------- |
-| `package.json` deps on `react`            | React     | `templates/react.md`         |
-| `package.json` deps on `@angular/core`    | Angular   | `templates/angular.md`       |
-| `*.csproj` / `*.sln`                       | .NET Core | `templates/netcore.md`       |
-| `go.mod`                                   | Go        | `templates/go.md`            |
-
-- if none of the signal files exist AND the repo has little/no source content (empty,
-  or just a README/.git/license) — this is a **new project**, not an unrecognized stack.
-  Note this distinction explicitly; it changes how step 2 Section A and step 4 behave
-  (ask instead of detect, propose instead of describe).
+- No signal files and little/no source content (empty, or just README/.git/license) →
+  **new project**, not unrecognized stack. This flips step 2A/step 4 to ask-and-propose
+  instead of detect-and-describe.
 
 ### 2. Present findings and ask for confirmation
 
-Summarize what's present and what's missing in the repo. Then take the sections in order — one section, one answer, then the next.
-
-Lead each section with the recommended answer so the user can accept it in a word. Give a one-line explainer only when the choice genuinely branches; skip the explainer if the choice is obvious.
+Summarize what's present/missing, then confirm one section at a time. Lead each with the
+recommended answer so the user can accept in a word; skip the explainer when obvious.
 
 **Section A — Confirm detected stack(s)**
 
-> Explainer: template choice and which subsections apply (`For Typescript`, `UI & Design System`, etc.) depend on getting the stack right — worth a quick confirm before generating anything, especially for mono-repos.
+Multi-select when asking (ambiguous/new-project case) — a repo can commit to more than one
+stack at once (mono-repo from day one), so single-select forces multiple re-runs.
 
-When this needs to be asked as a question (ambiguous or new-project case), make it
-multi-select. A repo — existing or brand-new — can commit to more than one stack at once
-(e.g. a new project planned as React frontend + .NET Core backend from day one), and
-asking single-select forces the user to re-run the flow once per stack instead of
-declaring the whole mono-repo in one pass.
-
-Present what step 1 found against the signal table:
-
-- **Single, unambiguous stack** — state it as the recommended answer so the user can accept in a word, e.g. "Detected React (`package.json` has `react` + `vite`) — proceeding with `templates/react.md`, correct?"
-- **Multiple stacks in one repo** (e.g. `frontend/` = React, `backend/` = .NET Core) — list each sub-app/folder with its detected stack and matching template, and confirm the split before writing anything.
-- **New project** (per step 1's empty-repo check) — there's nothing to detect. Ask the user directly which stack they're building with; if it's one of the four in `templates/`, use that template with step 4's "new project" fallback. If it's a stack with no template, say so and confirm whether to hand-write a fresh system prompt from the canonical skeleton in step 4 instead.
-- **Existing repo, but no known stack detected or signals conflict** — do not guess silently. Ask the user which stack to use; if none of `templates/` fits, say so and confirm whether to hand-write a fresh system prompt from the canonical skeleton in step 4 instead.
+- **Single, unambiguous stack** — state as the recommended answer, e.g. "Detected React
+  (`package.json` has `react` + `vite`) — proceeding with `templates/react.md`, correct?"
+- **Multiple stacks** (e.g. `frontend/`=React, `backend/`=.NET Core) — list each
+  sub-app/folder with its template and confirm the split before writing anything.
+- **New project** — nothing to detect; ask directly which stack. Use the matching
+  template + step 4's new-project fallback, or confirm hand-writing from the canonical
+  skeleton if no template fits.
+- **Conflicting/unknown signals on an existing repo** — do not guess silently; same
+  fallback as above.
 
 **Section B — Create a system prompt**
 
-> Explainer: The system prompt is a crucial part of the agent's configuration, guiding its behavior and responses.
+Ask which file: **CLAUDE.md** (preferred), **AGENTS.md**, or **Both**.
 
-Ask the user which system prompt to use. User can choose from the following options:
-
-- **CLAUDE.md (preferred)**: File containing the system prompt for the agent, typically used for Claude-based agents.
-- **AGENTS.md**: File containing the system prompt for the agent, typically used for other types of agents.
-- **Both**: Use both files to create a combined system prompt for the agent.
-
-Rules for choosing the system prompt:
-- If step 1 found existing system-prompt file(s), lead with what's already there as the
-  recommended answer (`CLAUDE.md` alone → recommend `CLAUDE.md`; both present →
-  recommend "Both"). Switching filenames on a re-run orphans the old file rather than
-  replacing it — if the user does want to switch, confirm what happens to the old one.
-- If the user selected "Both," write `AGENTS.md` first, then copy the content verbatim to `CLAUDE.md` — the two files must stay identical (aside from the `{{FILE_NAME}}` substitution in step 4). Otherwise, create only the one file the user chose.
-- The system prompt works like a standing instruction set for the agent — write it clear, concise, and actionable, not descriptive prose.
+- If step 1 found existing file(s), recommend what's already there (`CLAUDE.md` alone →
+  `CLAUDE.md`; both present → "Both"). Switching filenames on a re-run orphans the old one
+  — confirm what happens to it if the user switches anyway.
+- "Both" → write `AGENTS.md` first, copy verbatim to `CLAUDE.md` (only the `{{FILE_NAME}}`
+  substitution differs).
+- Write it as a standing instruction set — clear, concise, actionable, not descriptive
+  prose.
 
 ### 3. Plan the output file(s)
 
-Use the stack(s) confirmed in step 2 Section A and the filename confirmed in step 2
-Section B — do not re-detect or re-ask either here.
+Use the stack(s)/filename already confirmed in step 2 — don't re-detect or re-ask.
 
-- **Single stack** → one output file (or two, if "Both" was chosen in Section B) at the repo root.
-- **Multiple stacks in one repo** (mono-repo) → do NOT merge them into one file. Write a
-  root system-prompt file that holds only what's genuinely shared (Security Rules,
-  repo-wide Definition of Done) plus a link to each sub-app's own file, then write one
-  system-prompt file per sub-app using its matching template — see the `resolve:` comment
-  near the top of `templates/netcore.md` for the sub-app link pattern. Every file uses the
-  same filename chosen in Section B — a mono-repo doesn't mix filenames across sub-apps.
+- **Single stack** → one output file (two if "Both") at the repo root.
+- **Mono-repo** → do NOT merge into one file. Root holds only what's shared (Security
+  Rules, repo-wide Definition of Done) plus a mandatory routing table (below). Each
+  sub-app gets its own file from its matching template, with those same two sections
+  replaced by a pointer back to root (step 4). Same filename everywhere.
+
+Commit Message is never part of any CLAUDE.md/AGENTS.md, in either case — see step 7.
+
+**Root routing table (mono-repo only)** — a markdown link isn't enough: no agent
+auto-loads a file just because another file links to it, and a softly-worded pointer gets
+skipped for changes that look small even with the root file already in context. Keep the
+wording below close to verbatim — trimming "no exceptions for small changes" is what makes
+it get skipped. Place immediately after the root file's title/intro, before any other
+section:
+
+```
+## Routing — read first, even for trivial edits
+
+Before touching any file under a path below, you MUST Read the matching file
+first — no exceptions for small changes.
+
+| Path prefix | Read this file first |
+| --- | --- |
+| `<sub-app-folder>/**` | `<sub-app-folder>/{{FILE_NAME}}` |
+```
+
+One row per sub-app, using its real folder name. "Both" → substitute `CLAUDE.md`/
+`AGENTS.md` per copy, same as every other cross-link in step 4.
 
 ### 4. Resolve the template and write real content
 
-**Fresh write vs. update** — decide this per output location planned in step 3, using
-what step 1 found on disk. A mono-repo can be a fresh write in one sub-app and an update
-in another; a "Both" pair (`CLAUDE.md` + `AGENTS.md`) where only one file exists is an
-update of that file plus a fresh write of its twin, and the two must end up identical
-again.
+**Fresh write vs. update**, per output location: no file there → fresh write, resolve the
+template below. File exists → update in place — it's the source of truth for what the
+user customised; the template only supplies content that's new since the last run, never
+a wholesale regeneration.
 
-- **No file at that location** → fresh write. Resolve the template as described below.
-- **File already exists** → update it in place. Never resolve the template from scratch
-  and write it over the top: on a re-run, the file on disk is the source of truth for
-  everything the user has customised, and the template is only the source of
-  skill-authored content that is new or has changed since the last run.
+Update procedure: map existing `##`/`###` headings onto the canonical skeleton, then per
+section — **absent on disk** → resolve from template, insert at its position (picks up
+sections added since the last run). **Matches what this skill would produce** → replace,
+so fragment wording fixes land. **Diverged** (user edited/trimmed) → keep their version,
+propose new content rather than overwrite. **Not in skeleton** → user-authored, leave
+untouched. `Tech Stack`/`Architecture`/`Project Structure` and real folder/class tables
+describe *this* repo — re-survey and correct only what changed, never overwrite with
+template defaults. Show a summary (add/update/leave-alone) and confirm before writing. A
+skeleton section missing on disk may be a deliberate removal — ask before restoring it.
 
-Update procedure:
+**Resolve `{{FILE_NAME}}`** — every template's H1 is `# {{FILE_NAME}}`; substitute the
+chosen filename. "Both" → resolve once, write to `AGENTS.md`, copy verbatim to
+`CLAUDE.md`, swap only the H1 word — at **every** planned location in a mono-repo, not
+just root. Any cross-link in the body (root↔sub-app, or the netcore.md sub-app pointer)
+must also swap to match: `CLAUDE.md` links only to sibling `CLAUDE.md` files. Grep for the
+wrong filename before calling this done, e.g. `grep -rn "CLAUDE.md" **/AGENTS.md`.
 
-1. Read the existing file and map its `##`/`###` headings onto the canonical skeleton below.
-2. Classify every section, then act:
-   - **In the skeleton, absent on disk** → resolve it from the template and insert it at
-     its skeleton position. This is how a repo picks up a section added to this skill
-     after its last run.
-   - **Present and still matching what this skill would have produced** → replace with
-     the newly resolved content, so wording fixes to a shared fragment actually land.
-   - **Present but diverged** — the user edited it, extended it, or deliberately trimmed
-     bullets → keep their version. Do not restore template wording and do not re-add
-     bullets they removed. If the skill has genuinely new content for that section, show
-     it as a proposed addition and let the user decide.
-   - **Present, not in the skeleton** → user-authored section; leave it untouched. An
-     unrecognised section is a deliberate addition, not drift to clean up.
-3. `## Tech Stack`, `## Architecture`, `## Project Structure`, and every table of real
-   folder/feature/class names describe *this* repo, not the template. Re-survey the repo
-   and correct them only where the repo itself has changed — never overwrite them with
-   the template's defaults.
-4. Before writing, show the user a short summary: sections to add, sections to update,
-   sections left alone. Confirm, then write.
+**Resolve shared fragments** — a marker like `<!-- resolve: _shared/x.md (Plain) -->`
+replaces inline content: open the `_shared/` file, take its `## Plain` block (append an
+extra stack's block if the selector names one), substitute any `{{TOKEN}}` the marker
+passes, inline the result, delete the marker. A delivered file still containing a
+`resolve:` marker is a bug — that content is never auto-loaded and the rule silently
+vanishes.
 
-A section that exists in the skeleton but not in the delivered file is a user decision as
-often as it is a gap — ask before adding it back, the same way step 5 asks before
-touching an existing `.editorconfig`.
+**Mono-repo dedup** — for a sub-app file, skip resolving `_shared/security-rules.md` and
+`_shared/definition-of-done.md`; those two live once, at root, and resolving them per
+sub-app is how one rule ends up duplicated and drifting. Replace both sections with one
+line:
 
-**Resolve `{{FILE_NAME}}`** — every template's H1 header is `# {{FILE_NAME}}`. Substitute
-the literal filename chosen in step 2 Section B (`CLAUDE.md` or `AGENTS.md`). If the user
-chose "Both," resolve the rest of the template once, write it to `AGENTS.md`, then copy
-it verbatim to `CLAUDE.md` and swap only that one substituted word in the H1 — the body
-stays identical between the two files.
+> Root-wide rules (security, Definition of Done) live in
+> [<path-to-root>/{{FILE_NAME}}](<path-to-root>/{{FILE_NAME}}) — this file only covers
+> what's specific to the <sub-app>.
 
-If step 3 planned more than one output location (mono-repo: root + one per sub-app), this
-"Both" duplication applies at **every** location, not just the first one you write. Before
-finishing, check step 3's file list against what's actually on disk — each planned
-location needs both `CLAUDE.md` and `AGENTS.md` if "Both" was chosen, not only the root.
+Use the real relative path. Root's routing table (step 3) says which sub-app file to read
+for stack rules; this line says where the everywhere-rules live — together the agent gets
+the full picture from either direction. Skip this for a single-stack repo, where both
+sections resolve normally.
 
-In a mono-repo, files also cross-link each other (root ↔ sub-app links, the
-frontend/backend pointer from `templates/netcore.md`'s `resolve:` comment). When copying
-the `AGENTS.md` body to `CLAUDE.md` (or vice versa), any link inside that body pointing
-at a sibling system-prompt file must also be swapped to the matching filename — a
-`CLAUDE.md` links to sibling `CLAUDE.md` files, an `AGENTS.md` links to sibling
-`AGENTS.md` files. Grep the finished output for the wrong filename before considering
-step 4 done, e.g. `grep -rn "CLAUDE.md" **/AGENTS.md`.
-
-**Resolve shared fragments** — a subsection may contain a marker like
-`<!-- resolve: _shared/formatting-display.md (Plain) -->` instead of inline content. For
-each marker:
-
-1. Open the referenced file under `templates/_shared/`.
-2. Take the `## Plain` block. If the marker's selector names an extra stack (e.g.
-   `Plain + Go`), append that stack's `##` block's bullets after the Plain ones.
-3. If the marker passes a token, e.g. `{{ARTIFACTS}}="component, hook, util, or type"`,
-   substitute every `{{ARTIFACTS}}` in the fragment's text with that value before inlining.
-4. Replace the marker comment with the merged, substituted content, inlined directly in
-   the output file.
-
-The marker is a build-time-only mechanism for keeping the template sources in this skill
-DRY — it must never survive into the file written to the user's repo. A delivered
-CLAUDE.md/AGENTS.md that still contains a `<!-- resolve: ... -->` line or a live pointer
-to `_shared/` is a bug: that content is not auto-loaded by any agent and the rule would
-silently vanish from context every session.
-
-**Fill the rest with real project content** — every template follows the same canonical
-skeleton so output stays consistent across stacks:
+**Canonical skeleton:**
 
 ```
 ## Tech Stack
@@ -222,140 +180,75 @@ skeleton so output stays consistent across stacks:
     ### Unit Test Rules
     ### Rules
 ## Security Rules
-## Commit Message
 ## Definition of Done
 ```
 
-The template is a starting skeleton with real-world defaults, not a file to copy
-verbatim — replace every library choice, folder name, and naming-table entry with what's
-actually in the repo. Never leave a template placeholder like `<Project>` or `<Feature>`
-unresolved in the output — substitute the repo's real project/solution name and real
-feature folder names.
+Commit Message is intentionally absent from this skeleton — see step 7, it's delivered as
+a project skill instead of a section here.
 
-**`## Tech Stack` is deliberately thin in every template — write it yourself, don't copy
-it.** The template only lists what's common/core to the stack (framework, language,
-maybe styling). Everything deeper — UI kit, charts, auth provider, state management,
-backend, database, hosting, analytics — is intentionally left out because it varies per
-project and would go stale fast if hardcoded here. Explore the actual repo
-(`package.json`/lockfile, `*.csproj`/`packages.lock.json`, `go.mod`) and write the real
-list yourself; if a dependency's purpose isn't obvious from its name, ask the user rather
-than guessing. If you can't confidently determine something, leave it out rather than
-inventing a plausible-sounding entry.
+Not a file to copy verbatim — replace every library, folder, and naming-table entry with
+the repo's real ones; never leave a placeholder like `<Project>` unresolved.
 
-**New project fallback** — if step 1 flagged this as a new/empty project, there's no
-lockfile/`.csproj`/`go.mod` to read yet. Don't leave `Tech Stack` empty or invent
-libraries: ask the user directly what they plan to use beyond the template's baseline
-(state management, UI kit, testing tools, backend, hosting, etc.) and write their answer.
-Likewise treat each template's `## Project Structure` tree as the proposed starting
-layout to adopt, not a description of something that already exists — call this out to
-the user so they know it's a proposal, not a survey result.
+`## Tech Stack` is deliberately thin (framework/language/styling only) — write the real
+list yourself from the lockfile/`*.csproj`/`go.mod`. Deeper choices (UI kit, auth, state
+management, DB, hosting) vary per project and go stale if hardcoded — ask if a
+dependency's purpose isn't obvious, and leave it out rather than inventing an entry.
 
-**Detected-pattern subsections** — some template subsections (e.g. `Business Validation`
-in `templates/netcore.md`) exist only if the agent actually finds that pattern in the
-repo — a `resolve:` comment says what to search for. Three outcomes:
+**New project** — no lockfile yet: ask what's planned beyond the template baseline rather
+than inventing libraries. Treat `## Project Structure` as a proposed layout, not a survey
+result, and say so.
 
-1. **Found** — name the real class/function as it exists in *this* repo (never assume
-   the template's example name is the real one) and show real usage pulled from an
-   actual call site, covering every usage variant the template calls out (e.g. both a
-   single-error and a multi-error form), not just whichever one you happened to find first.
-2. **Not found, existing repo, no interest in adding one** — delete the whole
-   subsection. Don't leave a placeholder or invent a pattern nobody asked for.
-3. **Not found, new/empty project** — don't scaffold the actual source file (this skill
-   only writes documentation — see the top of this SKILL.md); instead write the section
-   as a standing instruction with a minimal canonical shape embedded directly inline, so
-   a future agent creates it consistently the first time the need comes up, rather than
-   reinventing it per feature. The embedded shape must be self-contained (no reference to
-   this skill's own files — the target repo can't see them) and deliberately minimal, not
-   a copy of every feature a more battle-tested version might have.
+**Detected-pattern subsections** (e.g. `Business Validation` in `netcore.md` — a
+`resolve:` comment says what to search for): **found** → name the real class/function,
+show real usage covering every variant the template calls out. **Not found, existing
+repo** → delete the subsection, no placeholder. **Not found, new project** → don't
+scaffold the source file (this skill only writes docs); write the section as a standing
+instruction with a minimal, self-contained shape inline. Never let "not found" default to
+inventing something plausible.
 
-This is the template for adding similar detect-or-drop guidance later: describe what to
-search for, what each outcome looks like, and never let "not found" default to inventing
-something plausible-sounding.
-
-Do not drop a section just because the surveyed repo happens not to need it yet
-(e.g. `Formatting Display` still matters for a Go service with no UI) — only drop
-`For Typescript`, `UI & Design System`, and `Loading Indicator` when the stack genuinely
-doesn't apply (i.e. it's not React or Angular).
+Don't drop a section just because the repo doesn't need it yet (e.g. `Formatting Display`
+still matters for a UI-less Go service) — only drop `For Typescript`/`UI & Design
+System`/`Loading Indicator` when the stack doesn't apply, and only replace `Security
+Rules`/`Definition of Done` with the root pointer for a mono-repo
+sub-app file.
 
 ### 5. Generate the formatting contract
 
-One set of rules, three files, because three different things have to obey them and none
-of them reads the others' file. `.editorconfig` states the rules for formatters and CI,
-`.gitattributes` makes Git enforce the line-ending half at checkout, and `.vscode/`
-makes the human's editor stop overriding both. Ship only the first and the rules become
-decoration: the repo declares `end_of_line = lf` while every Windows checkout writes
-CRLF and the status bar reads `Spaces: 2` — all three statements true at once, nothing
-visibly broken, and the repo failing its own formatting gate from the day it was created.
+Three files enforce one set of rules because three different consumers each read only
+their own file: `.editorconfig` (formatters/CI), `.gitattributes` (Git, at checkout),
+`.vscode/` (the human's editor). Ship only the first and the rules become decoration — a
+repo can declare `end_of_line = lf` while every Windows checkout still writes CRLF, status
+bar reading `Spaces: 2`, nothing visibly broken. All three are written **once at the repo
+root only**, even in a mono-repo — their patterns already match files at any depth, and
+`.vscode/settings.json` applies workspace-wide.
 
-Unlike the system-prompt file, all three are written **once at the repo root only** —
-even in a mono-repo. Their patterns (`[*.go]`, `*.bat`, etc.) already match files
-anywhere in the tree from a single root file, and VS Code applies `.vscode/settings.json`
-to the whole workspace; there's no need for one per sub-app the way
-`CLAUDE.md`/`AGENTS.md` need one per sub-app.
+**`.editorconfig`** — from `templates/editorconfig/`: `_base.editorconfig` (charset, line
+endings, base indent, `[*.md]` override) plus each confirmed stack's
+`<stack>.editorconfig` override if one exists (React/Angular don't — both match the
+4-space base). Write combined to root.
 
-**`.editorconfig`** — build it from `templates/editorconfig/`:
+**`.gitattributes`** — same shape: `_base.gitattributes` (`* text=auto eol=lf`, Windows
+script-host CRLF exceptions, binary guards — outranks a contributor's `core.autocrlf`,
+which is what actually enforces) plus any `<stack>.gitattributes` override (none exist
+today; add one only when a stack's tooling demonstrably rewrites endings, not
+speculatively).
 
-1. Start with `_base.editorconfig` (charset, line endings, base indent, the `[*.md]`
-   override) — this part never changes.
-2. For every stack confirmed in step 2 Section A, check `templates/editorconfig/` for a
-   matching override file (`<stack>.editorconfig`) and append it below the base if one
-   exists. Not every stack has one — React and Angular currently don't, because both
-   match the 4-space base default with nothing left to override. A mono-repo with
-   React + .NET Core gets the base plus just .NET Core's override block (React
-   contributes nothing, which is correct, not a gap).
-3. Write the combined result to `.editorconfig` at the repo root.
+**`.vscode/`** — copy `templates/vscode/settings.json` + `extensions.json` verbatim, no
+per-stack variants. VS Code has no native `.editorconfig` support and
+`editor.detectIndentation` defaults to `true`, silently overriding whatever's declared
+elsewhere — `settings.json` turns that off. Formatting keys only, and only keys that
+govern what a contributor types or creates — never `files.trimTrailingWhitespace`/
+`files.insertFinalNewline`, which rewrite a whole file on save and turn a one-line edit
+into a fifty-line diff. `.editorconfig` + CI already enforce those.
 
-**`.gitattributes`** — same shape, from `templates/gitattributes/`:
+**If any of these three already exist** (step 1): don't overwrite — show what would
+change and confirm; merge into project-specific decisions this skill can't know about,
+never replace wholesale.
 
-1. Start with `_base.gitattributes` (`* text=auto eol=lf`, the CRLF exceptions for
-   Windows script hosts, the binary guards). This is the part that actually enforces:
-   a `.gitattributes` entry outranks a contributor's `core.autocrlf`, so it holds on
-   every machine without anyone editing their global Git config.
-2. For every stack confirmed in step 2 Section A, append `<stack>.gitattributes` if one
-   exists. None do today. Don't add one speculatively — a stack earns an override only
-   when a tool in that stack demonstrably rewrites a file's endings behind Git's back,
-   not because it might.
-3. Write the combined result to `.gitattributes` at the repo root.
-
-**`.vscode/`** — copy `templates/vscode/settings.json` and `templates/vscode/extensions.json`
-verbatim into a `.vscode/` folder at the repo root. No per-stack variants; these keys are
-the same for every stack.
-
-This exists because VS Code honours neither of the two files above on its own. It has no
-native `.editorconfig` support — that needs the `EditorConfig.EditorConfig` extension,
-which `extensions.json` recommends but cannot install — and `editor.detectIndentation`
-defaults to `true`, meaning VS Code infers indentation from a file's existing content and
-overrides whatever was configured. A repo can declare 4 spaces in two places and still
-show `Spaces: 2` in the status bar the moment one file happens to be indented with 2.
-`settings.json` turns that inference off, so the declared rules hold with or without the
-extension.
-
-Keep this file to formatting keys only. Themes, font sizes, and machine-specific paths
-belong in a contributor's own user settings, not in a file the repo commits for everyone.
-
-**And keep it to keys that govern what a contributor types or creates — never keys that
-rewrite a file they merely opened.** `files.trimTrailingWhitespace` and
-`files.insertFinalNewline` are the ones to watch: VS Code applies both to the entire
-document on save, so a legacy file with trailing whitespace on fifty lines produces a
-fifty-line diff after a one-line edit. `.editorconfig` declares those rules and CI
-enforces them; committing them to `.vscode/settings.json` as well would turn every
-incidental save into a reformat the contributor never asked for. Anything added to this
-file later gets the same test: does it change a line nobody touched?
-
-**If any of these files already exist** (flagged in step 1): do not overwrite silently.
-Show the user what this would add or change and confirm before touching it. An existing
-`.editorconfig` may encode project-specific decisions (e.g. a team that deliberately
-chose tabs), an existing `.gitattributes` may encode ones this skill has no way to know
-about, and an existing `.vscode/settings.json` almost certainly holds keys beyond
-formatting — merge into it, never replace it.
-
-**If step 1 found the mismatch on an existing repo** — declares a line ending, has no
-`.gitattributes`, sits on a machine that converts at checkout — writing `.gitattributes`
-fixes every future checkout and nothing else. Files already on disk keep the endings they
-have until someone renormalises the repository, and that rewrites tracked files across
-the whole tree. **That is the user's operation to run, not this skill's — never execute
-any command in this block.** Report the condition in step 2's findings and print the
-exact command block below for the user to copy and run themselves:
+**If step 1 found the checkout mismatch** (ending declared, no `.gitattributes`, machine
+converts at checkout): writing `.gitattributes` only fixes future checkouts.
+Renormalizing tracked files is the user's call — report it and print this block for them
+to run themselves, never run it:
 
 ```bash
 git add --renormalize .
@@ -363,78 +256,70 @@ git status   # review before committing — this touches every mismatched file
 git commit -m "Normalize line endings"
 ```
 
-Add a note directly beneath the block: everyone else with an existing local clone must
-also refresh their working tree after this commit lands, or the same dialog keeps
-appearing on their machine even though the repo itself is now normalised —
+Everyone else with a local clone must also refresh after this commit lands:
 
 ```bash
 git rm -r --cached .
 git reset --hard HEAD
 ```
 
-(a fresh `git clone` works too, and is simpler for anyone without local uncommitted
-work). Do not run any of these commands, do not offer to run them as part of this skill,
-and never reformat files to make a formatter stop complaining — printing the block is the
-full extent of this skill's involvement.
+(a fresh clone also works). Never run these or offer to, and never reformat files just to
+silence a formatter.
 
-**Keep the four declarations in sync.** Indentation and line endings are each stated in
-four places, one per audience, and they must never disagree:
-
-| Source                                       | Audience                            |
-| ---------------------------------------------- | ----------------------------------- |
-| `templates/editorconfig/_base.editorconfig`    | formatters and CI                   |
-| `templates/gitattributes/_base.gitattributes`  | Git, at checkout and at commit      |
-| `templates/vscode/settings.json`               | the human's editor                  |
-| `templates/_shared/editor-config.md` (prose)   | the agent reading the system prompt |
-
-Change one, change all four. A stack's indent convention additionally lives in
-`templates/editorconfig/<stack>.editorconfig`, which changes with them.
-
-Four copies of one number is a real cost, and it is deliberate. Each consumer reads a
-different file and ignores the other three: Git never reads `.editorconfig`, VS Code
-never reads `.gitattributes`, and an agent reads none of them. A single source of truth
-here would mean one of the four audiences silently going unconfigured — which is exactly
-the failure this whole step exists to prevent.
-
-That last row is why every template also carries an `### Editor Config` subsection in
-`## Coding Convention` (resolved from `_shared/editor-config.md`): an agent has no
-built-in mechanism to auto-load `.editorconfig` the way an IDE does, so the rules are
-restated in prose, directly in the context it actually reads.
+**Keep the four declarations in sync** — indentation/line endings are each stated once per
+audience (`_base.editorconfig`, `_base.gitattributes`, `vscode/settings.json`, and
+`_shared/editor-config.md` prose for the agent, since it has no built-in way to auto-load
+`.editorconfig`). Change one, change all four, or one audience silently goes
+unconfigured — the reason this step exists at all.
 
 ### 6. Generate `.gitignore`
 
-Written **once at the repo root only**, same as step 5 — even in a mono-repo, since
-`node_modules/` and `bin/` match at any depth from a root file.
+Written **once at the repo root only**, same as step 5.
 
-Build it from `templates/gitignore/`:
+Build from `templates/gitignore/`: start with `_base.gitignore` (secrets, `*.local.*`,
+editor/OS cruft, logs, plus the `.vscode/` allowlist that keeps step 5's two committed
+files tracked while ignoring the rest — keep these in sync if step 5's `.vscode/` output
+changes) then append every confirmed stack's `<stack>.gitignore` (all four exist). Write
+the combined result to root.
 
-1. Start with `_base.gitignore` — secrets, `*.local.*`, editor and OS cruft, logs. It
-   also carries the `.vscode/` allowlist that keeps step 5's two committed files
-   tracked while ignoring everything personal in that folder. If you ever change what
-   step 5 writes into `.vscode/`, change that allowlist with it.
-2. For every stack confirmed in step 2 Section A, append `<stack>.gitignore`. All four
-   stacks have one, unlike the editorconfig overrides.
-3. Write the combined result to `.gitignore` at the repo root.
+Curate, don't generate exhaustively (`dotnet new gitignore` emits ~485 lines nobody
+reviews) — add project-specific rules to the project, stack-wide ones to the template.
 
-The goal is a curated baseline someone can read, not the exhaustive generated list
-(`dotnet new gitignore` emits ~485 lines) that nobody reviews and everybody copies. If
-the project genuinely needs a rule that isn't here, add it to the project — and if it's
-a rule every project of that stack needs, add it to the template instead.
+**Mono-repo** — read the combined result before writing; appending two stacks can
+over-reach into the other's tree (Go's `bin/` vs. .NET's `bin/`). Scope anything ambiguous
+to its sub-app path (`backend/bin/`) rather than leaving it global.
 
-**In a mono-repo, read the combined result before writing it.** Appending two stacks'
-files can produce a rule that over-reaches into the other's tree — Go's `*.so` and
-`bin/` against a .NET `bin/`, for instance. Anything ambiguous gets scoped to its
-sub-app path (`backend/bin/`) rather than left global.
+**If `.gitignore` already exists** — don't overwrite; show which rules are missing and let
+the user choose. It's usually a generated list already reviewed once; adding the missing
+lines beats replacing it.
 
-**If `.gitignore` already exists** (flagged in step 1): do not overwrite it. Show the
-user which of these rules are missing from theirs and let them choose — an existing
-`.gitignore` is usually the generated list from the stack's own tooling, and replacing
-it wholesale trades a reviewed file for a shorter one that may drop a rule they rely on.
-Adding the handful of genuinely missing lines is almost always the better change.
+**Never untrack an already-committed file.** If step 1 found tracked files the new rules
+would ignore, report and stop — `git rm --cached` is the user's call and the user's
+command, exactly like renormalizing in step 5. Never run it, never present it as part of
+finishing this step.
 
-**A new rule never untracks a file that is already committed.** If step 1 found tracked
-files the new rules would ignore, report them and stop. Untracking is
-`git rm --cached`, which produces a deletion in the diff and breaks anyone who was
-relying on that file being in the repo — the user's decision and the user's command to
-run, exactly as with renormalising in step 5. Never run it, and never present it as
-part of finishing this step.
+### 7. Generate the commit-message skill
+
+Commit Message is never resolved as a CLAUDE.md/AGENTS.md section (see step 4's
+skeleton) — it's delivered as a standalone, model-invocable skill instead, at
+`.claude/skills/commit-message/SKILL.md`. The commit convention only matters at the
+moment of running `git commit`, not on every file touch the way stack conventions do —
+putting it in the always-loaded root file makes an agent carry it in context on every
+turn for a fact it only needs once per commit, and testing showed a plain CLAUDE.md
+section doesn't reliably stop an agent from padding the message with a body/footer a
+convention never asked for either. A skill with a trigger-worthy `description` is read
+only when the agent is actually about to commit.
+
+Written **once at the repo root only**, even in a mono-repo — same reasoning as step 5/6:
+one convention for the whole repo, not one per sub-app.
+
+Copy `templates/skills/commit-message/SKILL.md` verbatim to
+`.claude/skills/commit-message/SKILL.md` — no per-stack variants, no `{{FILE_NAME}}`
+substitution (the skill's own filename never changes). If it already exists, don't
+overwrite silently — show what would change and confirm, same as step 5's formatting
+files.
+
+**Keep the file's own worked examples one line each.** A worked example carries more
+weight than a prose rule — if this file is ever edited to add a multi-line example
+(a body, a footer), an agent will start reproducing that shape even where the rule beside
+it says "optional" or doesn't forbid it. The file currently has none; don't add one.
