@@ -80,13 +80,13 @@ src/
 
 ### Naming
 
-| Pattern            | Use for                                       |
-| ------------------ | ---------------------------------------------- |
-| `PascalCase`       | Components, type, interface                    |
-| `camelCase`        | Functions, hooks, variable                      |
-| `kebab-case`       | File names                                      |
-| `snake_case`       | API Response interface (Map Golang/DB Column)   |
-| `UPPER_SNAKE_CASE` | Module-level constant                           |
+| Pattern              | Use for                                                      |
+| -------------------- | --------------------------------------------------------------- |
+| `PascalCase`         | Components, types, interfaces — file name matches for component files |
+| `camelCase`          | Functions, variables                                            |
+| `use` + `camelCase`  | Custom hooks (e.g. `useAuth`) — file name matches                |
+| `kebab-case`         | Non-component file names (e.g. `date-utils.ts`)                 |
+| `UPPER_SNAKE_CASE`   | Module-level constant                                            |
 
 ### Coding Rules
 

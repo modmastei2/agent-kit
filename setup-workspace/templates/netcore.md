@@ -74,12 +74,11 @@ This file provides guidance to AI coding agents (Claude Code, Codex, etc.) when 
 ### Naming
 
 | Pattern            | Use for                                             |
-| ------------------ | ---------------------------------------------------- |
-| `PascalCase`        | Classes, methods, properties, public fields            |
+| ------------------ | ---------------------------------------------- |
+| `PascalCase`        | Classes, methods, properties, public fields, constants |
 | `camelCase`         | Local variables, method parameters                     |
 | `_camelCase`        | Private fields                                          |
 | `IPascalCase`       | Interfaces (e.g. `IPaymentService`)                     |
-| `UPPER_SNAKE_CASE`  | Constants                                                |
 
 ### Coding Rules
 

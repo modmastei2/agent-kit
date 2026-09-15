@@ -69,6 +69,9 @@ go.sum
 | `snake_case`        | DB columns, JSON tags for API responses (map to FE/DB)      |
 | `UPPER_SNAKE_CASE`  | Environment variable names only                             |
 
+Acronyms stay fully capitalized in both cases — `UserID`/`userID`, `HTTPClient`, not
+`UserId`/`HttpClient`.
+
 ### Coding Rules
 
 - Always check and handle `error` — never discard with `_` unless justified by a comment

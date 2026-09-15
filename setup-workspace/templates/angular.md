@@ -65,13 +65,13 @@ angular.json
 
 ### Naming
 
-| Pattern            | Use for                                       |
-| ------------------ | ---------------------------------------------- |
-| `PascalCase`       | Components, type, interface                    |
-| `camelCase`        | Functions, hooks, variable                      |
-| `kebab-case`       | File names                                      |
-| `snake_case`       | API Response interface (Map Golang/DB Column)   |
-| `UPPER_SNAKE_CASE` | Module-level constant                           |
+| Pattern            | Use for                                                          |
+| ------------------ | --------------------------------------------------------------------- |
+| `PascalCase`       | Components, services, directives, pipes, types, interfaces              |
+| `camelCase`        | Properties, methods, local variables                                    |
+| `kebab-case`       | File names (e.g. `user-profile.component.ts`), component selectors      |
+| `$` suffix         | Observable-returning properties/variables (e.g. `user$`)                |
+| `UPPER_SNAKE_CASE` | Module-level constant                                                    |
 
 ### Coding Rules
 
