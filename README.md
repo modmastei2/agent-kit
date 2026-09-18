@@ -43,5 +43,6 @@ Skills are split below by how they get invoked:
 | --- | --- |
 | [bridge](bridge/SKILL.md) | Hand work to another CLI agent (Claude Code, Codex, etc.) or check for a reply via the Agent Bridge mailbox. |
 | [code-review](code-review/SKILL.md) | Review a diff (working tree, staged, commit range, or PR) against repo standards and spec, provider-agnostic. |
+| [minecraft-structure-design](minecraft-structure-design/SKILL.md) | Design Minecraft structures as an architect — massing, silhouette, taste-aware style application, progressive LOD refinement — for any style or gameplay type. |
 | [review-pr](review-pr/SKILL.md) | Orchestrate an AI-assisted review of a PR/MR on GitHub, GitLab, or Bitbucket, using `code-review` for all findings. |
 | [to-note](to-note/SKILL.md) | Capture arbitrary input into the personal Obsidian vault, filed under Inbox/Projects/Knowledge/People. |
