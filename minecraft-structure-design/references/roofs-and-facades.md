@@ -51,3 +51,41 @@ entrances and windows subordinate to it. Arches and structural openings (arcades
 colonnades) should express the same structural logic as the rest of the building — see
 [references/design-principles.md](design-principles.md) on "unsupported upper volumes"
 for the failure mode of openings that ignore what they need to structurally support.
+
+## Roof and façade enrichment (presentation layer)
+
+The elements below belong to Hero Visualization Mode
+([hero-visualization.md](hero-visualization.md)) and the Architectural Amplification Mass
+tier ([massing.md](massing.md)) — they read as richer presentation of a canonical roof/
+façade decision, and don't need to be treated as canonical geometry every time. A roof's
+job isn't only to follow the massing underneath (see "Roof language" above); in
+presentation it should also help create spectacle and reinforce the silhouette.
+
+**Roof enrichment:**
+- Deeper eaves than the canonical minimum overhang.
+- A stepped roof hierarchy read more distinctly (see "Layering" above, pushed further).
+- Layered roof read emphasized for silhouette impact (see
+  [silhouette.md](silhouette.md), "Hero silhouette accents").
+- A stronger, more prominent ridge line.
+- Exposed brackets and support beams shown more prominently than the structural minimum
+  requires.
+- Material transitions across the roof plane (e.g. a darker cap course) for visual
+  richness.
+
+**Façade enrichment:**
+- A more reinforced-looking entrance surround.
+- Banners, heraldry, or faction markers mounted on the façade.
+- Lantern brackets.
+- Slit windows for a fortified/mysterious read.
+- Façade rhythm pushed slightly more dramatic than the canonical bay spacing.
+- Timber framing rendered more prominent/decorative than the structural minimum.
+- Buttress-like supports emphasizing load paths that are real but understated in the
+  canonical design.
+- Depth variation and stone/timber material transitions beyond the canonical palette
+  count (see [block-palettes.md](block-palettes.md)'s Atmosphere Palette).
+
+Every enrichment above should trace back to a real canonical element it's amplifying (see
+[massing.md](massing.md), Architectural Amplification Mass) — it should never be the only
+place a structural idea appears. If an enrichment doesn't correspond to anything in the
+canonical design, it's either a Scene Support element (doesn't touch the building) or a
+sign the canonical design itself is missing something and should be revisited.

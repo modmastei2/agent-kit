@@ -61,6 +61,28 @@ before proceeding to LOD2 and beyond.
 - Relevant Taste Profile dimensions applied: <list, or "no established profile yet">
 - Deliberate deviations from taste, if any, and why: <...>
 
+### Canonical build truth (fill in once LOD1 is confirmed)
+- Canonical envelope: <rough footprint × height, the real buildable envelope>
+- Canonical truths: <the facts a Hero Visualization must not contradict — see
+  references/hero-visualization.md>
+- Core masses: <primary/secondary masses, Canonical Mass tier only — see references/massing.md>
+
+### Hero Visualization seeds (optional — only if the user wants a hero/concept preview;
+full brief goes in templates/hero-render-brief.md, this is just the handoff)
+- Hero silhouette accents: <candidate Architectural Amplification elements — see
+  references/silhouette.md, "Hero silhouette accents">
+- Architectural amplification opportunities: <candidate elements from references/massing.md>
+- Scene support elements: <candidate props/staging — see references/massing.md>
+- Must-preserve truths: <carry forward from "Canonical truths" above>
+- Allowed presentation embellishments: <what's fair game to amplify>
+- Presentation mood: <...>
+- Environment cues: <setting, backdrop>
+- Suggested props: <...>
+- Image-AI render notes: <faithful interpretation, not literal tracing>
+- Recommended camera angle: <...>
+- Lighting / time of day: <...>
+- Settlement backdrop: <present/absent>
+
 ### Open questions
 <Anything genuinely ambiguous that needs the user's input before proceeding — don't
 invent answers to these.>

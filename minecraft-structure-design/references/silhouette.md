@@ -40,3 +40,23 @@ To evaluate a silhouette: mentally flatten the design to a single-color outline.
 
 If the answer to (2) or (3) is "no, it would look the same," go back to massing before
 adding any more detail.
+
+## Hero silhouette accents
+
+Once a canonical silhouette passes the reduction test above, Hero Visualization Mode (see
+[hero-visualization.md](hero-visualization.md)) can push specific accents further for
+memorability, using the Architectural Amplification Mass tier
+([massing.md](massing.md)): roofline emphasis (a ridge read heavier or more sharply than
+the canonical minimum), entrance projection, chimney emphasis, a tower crown emphasized
+beyond its canonical proportion, or a bell/dais/gate treated as a stronger focal point than
+its literal LOD3 geometry.
+
+The concept phase may exaggerate a proportion slightly if it makes function or identity
+read more clearly — this is the same tool as
+[proportions.md](proportions.md)'s "Exaggeration as a deliberate tool," applied here
+specifically for silhouette legibility. The constraint that makes this safe rather than a
+drift into a different design: **exaggeration must never change what type of building this
+reads as.** A steep-roofed granary emphasized further still reads as a granary; if the
+emphasis makes it read as a chapel instead, it has crossed from amplification into altering
+canonical identity, and that's out of scope for presentation-layer work — it would need to
+go back through the canonical design workflow instead.

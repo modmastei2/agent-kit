@@ -36,3 +36,25 @@ Whatever proportion language a structure establishes (e.g. "windows are always h
 wall-segment tall") should hold across the structure unless a deliberate exception marks
 something as special (a great hall's windows taller than the rest). Inconsistent
 proportions without a reason read as a buildability accident, not a design decision.
+
+## Build proportion vs. presentation emphasis
+
+The relationships above define **build proportion** — the real, canonical ratios that go
+into LOD3/4 and the blueprint. They hold for the whole structure and don't get suspended
+for effect.
+
+**Presentation emphasis** is a separate, narrower move that belongs to Hero Visualization
+Mode (see [hero-visualization.md](hero-visualization.md)): specific hero-facing elements —
+a gate, a porch, a chimney, the roof/ridge, a tower crown, a civic entrance, a command
+dais, a forge bay — can be emphasized beyond their literal canonical proportion when
+presenting the design, using the Architectural Amplification Mass tier
+([massing.md](massing.md)). This is scoped to elements the design already gives a reason
+to foreground (see [composition.md](composition.md), "Focal points"); it is not a general
+license to inflate every dimension.
+
+Keep the two labeled separately in output: a structure-spec's LOD3 dimensions state build
+proportion; a Hero Render Brief's "architectural enrichment" section states presentation
+emphasis. Never let a presentation emphasis value silently overwrite the build proportion
+value for the same element — if the user likes the emphasized version enough to want it
+built, that's a deliberate canonical design change, made explicitly, not an automatic
+promotion.

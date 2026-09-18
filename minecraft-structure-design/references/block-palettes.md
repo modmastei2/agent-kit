@@ -65,3 +65,28 @@ rather than picking blocks that merely "look right" individually:
 
 These are starting vocabularies, not fixed rules — a user's palette taste and any
 `constraints.palette.preferred/forbidden` list always take precedence.
+
+## Palette layers: Structural / Accent / Atmosphere
+
+The material roles above (Foundation, Primary Wall, Structural Frame, Roof, Secondary
+Surface, Accent) are the **Structural Palette** — canonical, goes into LOD3/4 and the
+blueprint. Hero Visualization Mode (see [hero-visualization.md](hero-visualization.md))
+adds two more layers on top, purely for presentation:
+
+- **Structural Palette** (canonical) — the role-assigned materials above; this is what
+  actually gets built.
+- **Accent Palette** (presentation) — metal finishes, heraldry colors, banner cloth, trims,
+  lantern glass/frames — richer than the Structural Palette's single Accent role, used to
+  carry identity and detail in a hero render without changing the canonical material list.
+- **Atmosphere Palette** (presentation) — weathering variants, moss, warm lighting color,
+  smoke, and the material cues implied by Scene Support props (work props, military props,
+  environmental dressing) — see [massing.md](massing.md)'s Scene Support Mass tier.
+
+Material discipline still applies across all three layers — this is a richer *vocabulary*
+for presentation, not permission for random block noise. The same rule from "Material
+count discipline" above holds: every additional material, in any layer, needs a distinct
+role. A Hero Render Brief's Accent/Atmosphere choices don't have to appear in the
+Structural Palette's block list — they're describing a rendered look, not dictating new
+blocks to add to the actual build — but they should still be traceable to a coherent
+material story for the structure (see "Style-to-material translation" above), not picked
+for arbitrary variety.

@@ -35,6 +35,38 @@ Detail should clarify structure that's already legible: emphasizing a load path,
 an entrance, breaking a long repetitive run. Detail added to distract from a flat wall or
 a weak silhouette is noise, not architecture.
 
+## Functional core, aspirational presentation
+
+Major architecture — the Canonical Mass, the load-bearing logic, the envelope — must still
+have a functional and structural reason (see "Every major form needs a reason" above and
+[massing.md](massing.md)). That discipline doesn't relax for a hero-facing design. But
+minor elements, and everything in Hero Visualization Mode (see
+[hero-visualization.md](hero-visualization.md)), are allowed to serve a *different* set of
+legitimate jobs: reinforcing identity, creating atmosphere, supporting storytelling,
+improving presentation. None of those are lesser reasons — they just aren't structural
+ones, and should be labeled as presentation rather than build truth.
+
+Working rules:
+
+- **Do not treat beauty as dishonesty.** A design that reads as more dramatic, more
+  atmospheric, or more memorable than a strictly minimal reading of its function is not
+  automatically "unfaithful" — it's dishonest only if it misrepresents what will actually
+  be built without saying so.
+- **Hero readability may exceed literal minimalism.** A gate that's presented heavier, a
+  roof that reads more dramatic, a façade with more depth than the bare LOD3 minimum are
+  legitimate presentation choices, not violations of "architecture before decoration" —
+  see [hero-visualization.md](hero-visualization.md) for where the line sits.
+- **Meaningful embellishment is allowed.** The failure mode this skill avoids is
+  *meaningless* decorative noise (see the critique checklist below), not decoration or
+  richness in general. A banner, a heraldic mark, a lantern bracket, a weathered texture
+  that reinforces identity or mood is doing a job.
+- **A concept render may amplify material richness and atmosphere while preserving the
+  canonical architectural truth.** Amplifying how something *looks* (lighting, weathering,
+  material depth, prop dressing) is different from changing *what it is* (its massing,
+  proportions, structural logic, and identity as a structure type) — the first is
+  presentation, the second breaks canonical truth and is not allowed without the user
+  explicitly revising the design.
+
 ## Self-critique checklist
 
 Run every design past this list before presenting it as finished. For each hit, explain

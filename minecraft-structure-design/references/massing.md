@@ -38,6 +38,48 @@ comparably-sized volumes reads as vernacular/domestic. Keep the implied scale co
 with the structure's actual function — a small forge shouldn't get monumental massing
 just because the style is "grand."
 
+## The three mass tiers
+
+Every volume associated with a structure — in the canonical design or in a Hero
+Visualization — belongs to exactly one of these tiers. Know which tier a given form is in;
+say so explicitly whenever it isn't obvious (see
+[hero-visualization.md](hero-visualization.md) for how this maps onto output).
+
+**Canonical Mass** — the real architecture: primary mass, secondary masses, and any volume
+that's actually part of the structure's envelope. Every canonical mass must have a
+functional or structural reason (see [design-principles.md](design-principles.md), "Every
+major form needs a reason"). This is what goes into LOD3/4 and the blueprint/NBT.
+
+**Architectural Amplification Mass** — a more dramatic *reading* of a canonical form,
+used in presentation to make an already-justified element read stronger: a thicker gate
+frame, a stronger porch, a deeper roof overhang, added roof layering, a parapet, a heavier
+buttress, stronger entrance framing, chimney emphasis. An amplification mass corresponds to
+a real canonical element — it exaggerates how that element reads, it doesn't invent a new
+one. It does not need to match canonical geometry block-for-block; it needs to stay
+legibly the same architecture (see [proportions.md](proportions.md), "Build proportion vs.
+presentation emphasis").
+
+**Scene Support Mass** — elements that are not the building at all: crates, barrels,
+weapon racks, carts, banner poles, lantern posts, fences, palisade fragments, hay, work
+props, camp elements. These exist purely for presentation, identity reinforcement, or
+storytelling and carry no structural claim on the building whatsoever.
+
+Functional-reason requirements scale down the tiers, not up:
+
+- Canonical Mass **must** have a functional/structural reason.
+- Architectural Amplification Mass **should** correspond to a real canonical element and
+  amplify it legibly — its "reason" is presentation/identity, which is legitimate (see
+  [design-principles.md](design-principles.md), "Functional core, aspirational
+  presentation"), but it is never invented as a substitute for a canonical mass that
+  doesn't otherwise exist.
+- Scene Support Mass **may** be purely functional, identity-reinforcing, atmospheric, or
+  storytelling support — any of these is a sufficient reason on its own, since it never
+  claims to be part of the building's structural logic.
+
+Canonical Build Mode works in the Canonical Mass tier only. Hero Visualization Mode can use
+all three, each labeled — never blur an Amplification or Scene Support mass into looking
+like it belongs in the LOD3/4 spec.
+
 ## Working at the massing stage
 
 - Block volumes as simple solids (mentally: boxes, wedges, cylinders) — no textures, no
