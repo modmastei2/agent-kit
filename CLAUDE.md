@@ -18,6 +18,44 @@ Examples:
 - `fix(setup-workspace): route design tokens through Tailwind utilities`
 - `docs: add commit message convention`
 
+
+## Skill Design & Context Isolation
+
+Skills must be reusable, capability-oriented, and domain-agnostic by default. The context in which a skill is created must not become a permanent requirement of that skill.
+
+- **Intent over context**: Derive the skill's purpose and scope from the explicitly requested capability, not from the current conversation, project, or task.
+- **Generic by default**: Design around reusable capabilities, workflows, and principles rather than specific domains, technologies, or use cases.
+- **Context isolation**: Treat creation-time context as reference material, not permanent requirements. Never carry over incidental entities, APIs, platforms, workflows, or assumptions.
+- **No language hardcoding**: Never infer a skill's required language from the creation session. Follow the future user's requested language or current interaction language.
+- **Runtime adaptability**: Resolve domain, terminology, tools, conventions, language, and preferences when the skill is invoked, not when it is created.
+- **Separation of concerns**: Keep generic instructions separate from domain-specific knowledge, configurations, and examples.
+- **Examples are not requirements**: Use examples only to illustrate behavior. Never turn incidental details from examples into universal rules.
+- **Minimal assumptions**: Avoid hardcoded paths, tools, frameworks, formats, or project conventions unless essential to the skill's purpose.
+- **Adaptive execution**: Prefer principles and decision criteria over rigid procedures unless strict execution order is necessary.
+- **Explicit specialization**: Domain-specific behavior is allowed when explicitly requested or inherently necessary. Keep it isolated and clearly documented.
+
+#### Validation
+
+Before finalizing or committing a skill, verify:
+
+1. Can the skill work in an unrelated domain without modifying its core instructions?
+2. Does it contain assumptions inherited only from the creation session?
+3. Are language, tools, platforms, paths, or formats unnecessarily hardcoded?
+4. Are examples being treated as universal requirements?
+5. Will the skill adapt correctly to a future user's context and preferences?
+
+Remove or generalize leaked assumptions. If specialization is necessary, ensure it is intentional and justified.
+
+
+## Skill Maintenance
+
+- **Rewrite over append**: Update existing instructions in place rather than appending new rules or sections.
+- **Consolidate**: Merge overlapping requirements into existing principles. Avoid duplication and contradictory instructions.
+- **Preserve intent**: Maintain the skill's original purpose, scope, and behavior unless explicitly requested otherwise.
+- **Minimal footprint**: Prefer the smallest coherent set of instructions that fully expresses the intended behavior.
+- **Refactor when necessary**: Reorganize or rewrite existing content when incremental edits would reduce clarity or consistency.
+- **Review holistically**: After editing, review the entire skill for redundancy, contradictions, and unnecessary growth.
+
 ## Skill Versioning
 
 Every `SKILL.md` declares `version: <major>.<minor>.<patch>` in its frontmatter. Whenever
