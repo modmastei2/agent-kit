@@ -34,8 +34,8 @@ function makeLayout(D) {
     const mid = at(.5);
     return { d: `M${x1},${y1} C${c1[0]},${c1[1]} ${c2[0]},${c2[1]} ${ex},${ey}`, mx: mid[0] + (e.lx || 0), my: mid[1] + (e.ly || 0), at };
   }
-  // rough rendered width of an edge label at 10.5px (Thai combining marks take no width)
-  function labelWidth(s) { return String(s || '').replace(/[ัิ-ฺ็-๎]/g, '').length * 6 + 6; }
+  // rough rendered width of an edge label at 10.5px; combining marks (any script) take no width
+  function labelWidth(s) { return String(s || '').replace(/\p{M}/gu, '').length * 6 + 6; }
   const maxCol = Math.max(...D.nodes.map(n => n.col)), maxRow = Math.max(...D.nodes.map(n => n.row));
   const W = PAD * 2 + maxCol * CW + NW + 20, H = TOP + maxRow * RH + NH + 24;
   return { NW, NH, CW, RH, PAD, TOP, W, H, byId, box, edgeGeom, labelWidth };

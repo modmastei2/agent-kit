@@ -1,46 +1,95 @@
 #!/usr/bin/env node
-// Build a self-contained lifecycle-diagram HTML page from a data file, and lint its layout.
+// Build a self-contained lifecycle-diagram page and lint its layout.
+// The deliverable is ONLY the HTML: it embeds its data, so no data file ever needs to
+// live next to it. Data files are working material and belong in a work dir.
 //
-//   node build.mjs <data.js> <out.html>      validate + write the page
-//   node build.mjs <data.js> --check         validate only
+//   node build.mjs --workdir <name>              create + print a work dir outside any project
+//   node build.mjs <source> --check              validate + lint only
+//   node build.mjs <source> <out.html> [--clean] validate + lint + write the page;
+//                                                --clean then deletes the work dir of <source>
+//   node build.mjs <page.html> --extract <data.js>  recover the data embedded in a built page
 //
-// <data.js> assigns `window.DATA = {...}` (see references/data-schema.md).
-// Exit code 1 on schema errors. Layout problems (edge through a node, overlapping
-// labels, outcome step with no edge) are printed as warnings — fix them by moving
-// nodes (col/row) or nudging edges (fs/ts/fo/to_/k/lx/ly), then rebuild.
+// <source> is a data file that assigns `window.DATA = {...}` (references/data-schema.md),
+// or a previously built page — rebuilding a page from itself upgrades it to the current
+// template without any data file. Exit 1 on schema errors; layout problems are warnings.
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import vm from 'node:vm';
+import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const assets = path.join(here, '..', 'assets');
-const [dataPath, outArg] = process.argv.slice(2);
-if (!dataPath || !outArg) {
-  console.error('usage: node build.mjs <data.js> <out.html> | --check');
-  process.exit(2);
+const WORK_ROOT = path.join(os.tmpdir(), 'lifecycle-diagram');
+const argv = process.argv.slice(2);
+const flag = k => argv.includes(k);
+const usage = () => { console.error('usage: node build.mjs --workdir <name> | <source> --check | <source> <out.html> [--clean] | <page.html> --extract <data.js>'); process.exit(2); };
+
+if (argv[0] === '--workdir') {
+  if (!argv[1]) usage();
+  const dir = path.join(WORK_ROOT, argv[1].replace(/[^\w.-]+/g, '-'));
+  fs.mkdirSync(dir, { recursive: true });
+  console.log(dir);
+  process.exit(0);
 }
+const [srcPath, outArg] = argv;
+if (!srcPath || !outArg) usage();
 const checkOnly = outArg === '--check';
 
+// a built page carries its data between these markers
+const BEGIN = '/*__DATA_BEGIN__*/', END = '/*__DATA_END__*/';
+let dataSrc = fs.readFileSync(srcPath, 'utf8');
+const fromPage = /\.html?$/i.test(srcPath);
+if (fromPage) {
+  const a = dataSrc.indexOf(BEGIN), b = dataSrc.indexOf(END);
+  if (a < 0 || b < a) { console.error(`ERROR: ${srcPath} has no embedded data (built by an older version?)`); process.exit(1); }
+  dataSrc = dataSrc.slice(a + BEGIN.length, b).trim() + '\n';
+}
+if (outArg === '--extract') {
+  const dest = argv[2]; if (!dest) usage();
+  fs.mkdirSync(path.dirname(path.resolve(dest)), { recursive: true });
+  fs.writeFileSync(dest, dataSrc);
+  console.log(`extracted data to ${dest}`);
+  process.exit(0);
+}
+
+// keep working files out of the user's project: a data file next to the page, or inside
+// a git work tree, is exactly the kind of file that turns into clutter later
+function gitRoot(p) {
+  for (let d = path.dirname(path.resolve(p)); ; d = path.dirname(d)) {
+    if (fs.existsSync(path.join(d, '.git'))) return d;
+    if (path.dirname(d) === d) return null;
+  }
+}
+if (!fromPage && !checkOnly && path.dirname(path.resolve(srcPath)) === path.dirname(path.resolve(outArg))) {
+  console.error(`ERROR: data file sits next to the output. Keep it in a work dir instead:\n  node ${path.relative(process.cwd(), fileURLToPath(import.meta.url))} --workdir <name>`);
+  process.exit(1);
+}
+// tracked files (e.g. a skill's own examples) are deliberate; only untracked ones become clutter
+const isTracked = (root, f) => { try { execFileSync('git', ['-C', root, 'ls-files', '--error-unmatch', path.resolve(f)], { stdio: 'ignore' }); return true; } catch { return false; } };
+const srcRepo = fromPage ? null : gitRoot(srcPath);
+const earlyWarns = srcRepo && !isTracked(srcRepo, srcPath) ? [`data file is an untracked file inside the git work tree ${srcRepo} — it will turn into clutter; move it to a work dir (--workdir)`] : [];
+
 const layoutSrc = fs.readFileSync(path.join(assets, 'layout.js'), 'utf8');
-const dataSrc = fs.readFileSync(dataPath, 'utf8');
 const ctx = { window: {}, module: undefined };
 vm.createContext(ctx);
 try {
   vm.runInContext(layoutSrc, ctx, { filename: 'layout.js' });
-  vm.runInContext(dataSrc, ctx, { filename: path.basename(dataPath) });
+  vm.runInContext(dataSrc, ctx, { filename: path.basename(srcPath) });
 } catch (e) {
-  console.error(`ERROR evaluating ${dataPath}: ${e.message}`);
+  console.error(`ERROR evaluating ${srcPath}: ${e.message}`);
   process.exit(1);
 }
 const D = ctx.window.DATA;
-const errors = [], warns = [];
+const errors = [], warns = [...earlyWarns];
 if (!D || !Array.isArray(D.nodes) || !Array.isArray(D.edges)) {
   console.error('ERROR: data file must set window.DATA with nodes[] and edges[]');
   process.exit(1);
 }
 
 /* ---- schema ---- */
+for (const n of D.nodes) if (n.short == null && n.th != null) n.short = n.th;   // pre-1.0 alias
 const KINDS = ['start', 'main', 'side', 'ok', 'cancel', 'ret', 'exc'];
 const EKINDS = ['main', 'cancel', 'ret', 'exc', 'back'];
 const ids = new Set();
@@ -79,7 +128,7 @@ if (!errors.length) {
   for (const n of D.nodes) {
     const b = L.box(n), code = String(n.code || n.raw);
     if (code.length * 7.3 > b.w - 10) warns.push(`node ${n.id}: "${code}" is too wide for its box — set a shorter code or a larger w`);
-    if (n.th && L.labelWidth(n.th) * 1.07 > b.w - 8) warns.push(`node ${n.id}: second line "${n.th}" is too wide — shorten th or set w`);
+    if (n.short && L.labelWidth(n.short) * 1.07 > b.w - 8) warns.push(`node ${n.id}: second line "${n.short}" is too wide — shorten it (short) or set w`);
   }
   // row labels sit at the left edge above each row
   const rowBoxes = (D.rows || []).map((r, i) => ({ x: 8, y: L.TOP + i * L.RH - 20, w: L.labelWidth(r) * 1.15, h: 14, name: `row label "${r}"` }));
@@ -132,12 +181,22 @@ function soft(hex, a) {
 const light = D.accent?.light || '#2443c9', dark = D.accent?.dark || '#8ea6ff';
 const escAttr = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;');
 const html = fs.readFileSync(path.join(assets, 'template.html'), 'utf8')
-  .replace('__LANG__', D.lang || 'th')
+  .replace('__LANG__', D.lang || 'en')
   .replace('__TITLE__', escAttr(D.title || D.name))
   .replace('__ACCENT__', light).replace('__ACCENT_SOFT__', soft(light, .09))
   .split('__ACCENT_DARK__').join(dark).split('__ACCENT_SOFT_DARK__').join(soft(dark, .14))
   .replace('/*__LAYOUT__*/', () => layoutSrc)
-  .replace('/*__DATA__*/', () => dataSrc);
+  // a literal </script> inside payload examples would end the page's script block early
+  .replace('/*__DATA__*/', () => dataSrc.replace(/<\/script/gi, '<\\/script'));
 fs.mkdirSync(path.dirname(path.resolve(outArg)), { recursive: true });
 fs.writeFileSync(outArg, html);
 console.log(`wrote ${outArg} (${(html.length / 1024).toFixed(0)} KB)${warns.length ? ` — ${warns.length} warning(s) above` : ''}`);
+
+if (flag('--clean') && !fromPage) {
+  // only ever delete inside the managed work root; anything else is the user's file
+  const dir = path.dirname(path.resolve(srcPath));
+  if (path.resolve(dir).startsWith(path.resolve(WORK_ROOT) + path.sep)) {
+    fs.rmSync(dir, { recursive: true, force: true });
+    console.log(`cleaned work dir ${dir}`);
+  } else console.warn(`WARN  --clean skipped: ${dir} is not under ${WORK_ROOT}`);
+}

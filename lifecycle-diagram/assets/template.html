@@ -228,7 +228,9 @@ footer ul{padding-left:18px}
 /*__LAYOUT__*/
 </script>
 <script>
+/*__DATA_BEGIN__*/
 /*__DATA__*/
+/*__DATA_END__*/
 </script>
 <script>
 (function(){
@@ -237,29 +239,31 @@ const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 
 /* ---- configurable vocabulary (Thai defaults; override any key in D.ui / D.tags / D.actors / D.effects) ---- */
+// Neutral English defaults. A page is written in its reader's language by overriding
+// these through D.ui / D.tags / D.tagDesc — nothing here should need editing per domain.
 const UI = Object.assign({
-  titlePrefix:'วงจรชีวิต ', themeBtn:'สลับธีม',
-  outTitle:'ไปจบที่ไหนได้บ้าง', outSub:'เลือกเส้นทางเพื่อไฮไลต์บนแผนภาพ · กดชื่อสถานะในแถบด้านล่างหรือกด ▶ เพื่อเดินทีละขั้น',
-  noPath:'ยังไม่ได้เลือกเส้นทาง — แผนภาพแสดงทุกเส้น', play:'▶ เดินทีละขั้น', pause:'❚❚ หยุด', clear:'ล้าง',
-  mappedLabel:'ภายใน', effectLabel:'ผล', whoLabel:'ใครทำให้เกิด',
-  meaning:'ความหมาย', transitions:'มาจาก / ไปต่อ', terminal:'ไม่มีทางไปต่อ — จุดจบของวงจร',
-  webhook:'Webhook / Event ที่จะได้รับ', apis:'API ที่ต้องใช้ตรงจุดนี้', noApi:'ไม่มี action ฝั่งเรา — รออีกฝ่าย แล้วอ่านผลด้วย API ดึงรายละเอียด',
-  gotchas:'ข้อควรระวัง', copy:'คัดลอก', copied:'คัดลอกแล้ว', req:'Request', res:'Response',
-  basicsTitle:'ก่อนเรียก API ตัวแรก', basicsSub:'ทุก request ในแผงด้านบนต้องผ่านเงื่อนไขพวกนี้ก่อน',
-  mapTitle:'ตารางสถานะดิบ → สถานะภายใน', mapSub:'',
-  colRaw:'สถานะดิบ', colMeaning:'ความหมาย', colLevel:'ระดับ', colMapped:'ภายใน', colEffect:'ผล',
-  tagsTitle:'ป้ายความน่าเชื่อถือ:',
-  legend:{main:'เส้นทางปกติ', cancel:'ยกเลิก / ล้มเหลว', ret:'ย้อนกลับ / คืน', exc:'ข้อยกเว้น', back:'วนกลับ'},
-  kinds:{start:'จุดเริ่ม', main:'สถานะระหว่างทาง', side:'สถานะแทรก', ok:'จบ · สำเร็จ', cancel:'จบ · ยกเลิก', cancelMid:'ระหว่างยกเลิก', ret:'ย้อนกลับ / คืน', exc:'ข้อยกเว้น'},
-  end:'END'
+  titlePrefix:'Lifecycle · ', themeBtn:'Toggle theme',
+  outTitle:'Where can it end?', outSub:'Pick a path to highlight it · click a status in the strip below, or press ▶ to walk it step by step',
+  noPath:'No path selected — the diagram shows every transition', play:'▶ Walk through', pause:'❚❚ Pause', clear:'Clear',
+  mappedLabel:'Maps to', effectLabel:'Effect', whoLabel:'Triggered by',
+  meaning:'Meaning', transitions:'Comes from / goes to', terminal:'No way out — the lifecycle ends here',
+  webhook:'Webhook / event you receive', apis:'API calls at this step', noApi:'Nothing to call here — wait for the other side, then read the result with the detail call',
+  gotchas:'Watch out', copy:'Copy', copied:'Copied', req:'Request', res:'Response',
+  basicsTitle:'Before your first API call', basicsSub:'Every request in the panel above depends on these',
+  mapTitle:'Raw status → mapped status', mapSub:'',
+  colRaw:'Raw status', colMeaning:'Meaning', colLevel:'Level', colMapped:'Maps to', colEffect:'Effect',
+  tagsTitle:'Confidence tags:', end:'END'
 }, D.ui || {});
-UI.legend = Object.assign({main:'เส้นทางปกติ', cancel:'ยกเลิก / ล้มเหลว', ret:'ย้อนกลับ / คืน', exc:'ข้อยกเว้น', back:'วนกลับ'}, (D.ui||{}).legend || {});
-const TAG = Object.assign({doc:'เอกสารทางการ', repo:'พิสูจน์แล้ว', unv:'UNVERIFIED', gen:'ความรู้ทั่วไป'}, D.tags || {});
-const TAGDESC = D.tagDesc || {doc:'อ่านจากเอกสารทางการ', repo:'ใช้/ทดสอบจริงแล้ว', unv:'แหล่งข้อมูลบอกว่ายังไม่ยืนยัน', gen:'ไม่ได้มาจากแหล่งข้อมูลที่ระบุ ต้องเช็กก่อนใช้'};
-const WHO = Object.assign({buyer:'ผู้ซื้อ', seller:'ร้าน (เรา)', user:'ผู้ใช้', us:'ระบบเรา', platform:'แพลตฟอร์ม', carrier:'ขนส่ง', system:'ระบบ', admin:'แอดมิน', bank:'ธนาคาร'}, D.actors || {});
-const EFF = D.effects || null;   // e.g. {consume:{label:'กินสต๊อก', tone:'blue'}, ...}
+UI.legend = Object.assign({main:'Main path', cancel:'Cancel / failure', ret:'Reversal / return', exc:'Exception', back:'Loop back'}, (D.ui||{}).legend || {});
+UI.kinds = Object.assign({start:'Start', main:'Intermediate', side:'Side state', ok:'End · success', cancel:'End · cancelled', cancelMid:'Cancelling', ret:'Reversal / return', exc:'Exception'}, (D.ui||{}).kinds || {});
+const TAG = Object.assign({doc:'Official docs', repo:'Verified', unv:'UNVERIFIED', gen:'General knowledge'}, D.tags || {});
+const TAGDESC = Object.assign({doc:'read in official documentation', repo:'proven by working code, tests or a sandbox', unv:'a source says it is unconfirmed', gen:'not verified against a source — check before relying on it'}, D.tagDesc || {});
+const WHO = D.actors || {};   // actor keys -> labels; unknown keys are shown as-is
+const EFF = D.effects || null;   // e.g. {deployed:{label:'Running in production', tone:'green'}, ...}
 const effOf = n => EFF && n.effect ? EFF[n.effect] : null;
 
+// `th` is the pre-1.0 name of `short`; keep reading it so older pages still rebuild
+D.nodes.forEach(n => { if (n.short == null && n.th != null) n.short = n.th; });
 const L = makeLayout(D);
 const { byId, box, edgeGeom } = L;
 const isEnd = n => n.end ?? (['ok','cancel'].includes(n.kind) && !D.edges.some(e => e.from === n.id && e.kind !== 'back'));
@@ -302,12 +306,12 @@ D.edges.forEach((e,i) => {
 (D.rows||[]).forEach((r,i) => { s += `<text class="rowlab" x="10" y="${L.TOP + i*L.RH - 8}">${esc(r)}</text>`; });
 D.nodes.forEach(n => {
   const b = box(n); const kind = n.kind || 'main'; const ef = effOf(n);
-  s += `<g class="node k-${kind}" data-id="${esc(n.id)}" tabindex="0" role="button" aria-label="${esc(n.raw)} ${esc(n.th)}">
+  s += `<g class="node k-${kind}" data-id="${esc(n.id)}" tabindex="0" role="button" aria-label="${esc(n.raw)} ${esc(n.short)}">
     <rect class="nb" x="${b.x}" y="${b.y}" width="${b.w}" height="${b.h}" rx="11"/>
     ${isEnd(n) ? `<text class="tm" x="${b.x+8}" y="${b.y+13}">${esc(UI.end)}</text>` : ''}
     ${ef ? `<circle class="dot tn-${ef.tone||'gray'}" cx="${b.x+b.w-11}" cy="${b.y+11}" r="4.5"/>` : ''}
     <text class="nc" x="${b.cx}" y="${b.y+27}">${esc(n.code || n.raw)}</text>
-    <text class="nl" x="${b.cx}" y="${b.y+44}">${esc(n.th)}</text></g>`;
+    <text class="nl" x="${b.cx}" y="${b.y+44}">${esc(n.short)}</text></g>`;
 });
 svg.innerHTML = s;
 svg.querySelectorAll('.node').forEach(g => {
@@ -349,7 +353,7 @@ function select(id, user){
     <div class="ph">
       <div class="kind">${esc(kindLabel)}${n.level ? ' · ' + esc(n.level) : ''}</div>
       <div class="raw">${esc(n.raw)}</div>
-      <div class="th">${esc(n.th)}</div>
+      <div class="th">${esc(n.short)}</div>
       <div class="chips">
         ${n.mapped ? `<span class="chip">${esc(UI.mappedLabel)} <b class="mono">${esc(n.mapped)}</b></span>` : ''}
         ${ef ? `<span class="chip tn-${ef.tone||'gray'}">${esc(UI.effectLabel)} <b>${esc(ef.label)}</b></span>` : ''}
@@ -413,7 +417,7 @@ if (D.mapTable !== false && rows.length){
   $('#mapTitle').textContent = UI.mapTitle; $('#mapSub').innerHTML = UI.mapSub || '';
   const hasMapped = rows.some(n => n.mapped), hasEff = !!EFF, hasLevel = rows.some(n => n.level);
   $('#map').innerHTML = `<thead><tr><th>${esc(UI.colRaw)}</th><th>${esc(UI.colMeaning)}</th>${hasLevel?`<th>${esc(UI.colLevel)}</th>`:''}${hasMapped?`<th>${esc(UI.colMapped)}</th>`:''}${hasEff?`<th>${esc(UI.colEffect)}</th>`:''}</tr></thead><tbody>` +
-    rows.map(n => { const ef = effOf(n); return `<tr><td><button class="rowbtn" type="button" data-go="${esc(n.id)}">${esc(n.raw)}</button></td><td>${esc(n.th)}</td>${hasLevel?`<td>${esc(n.level||'')}</td>`:''}${hasMapped?`<td><code>${esc(n.mapped||'—')}</code></td>`:''}${hasEff?`<td class="eff${ef?' tn-'+(ef.tone||'gray'):''}">${esc(ef?.label||'—')}</td>`:''}</tr>`; }).join('') + '</tbody>';
+    rows.map(n => { const ef = effOf(n); return `<tr><td><button class="rowbtn" type="button" data-go="${esc(n.id)}">${esc(n.raw)}</button></td><td>${esc(n.short)}</td>${hasLevel?`<td>${esc(n.level||'')}</td>`:''}${hasMapped?`<td><code>${esc(n.mapped||'—')}</code></td>`:''}${hasEff?`<td class="eff${ef?' tn-'+(ef.tone||'gray'):''}">${esc(ef?.label||'—')}</td>`:''}</tr>`; }).join('') + '</tbody>';
   $('#map').addEventListener('click', ev => { const b = ev.target.closest('[data-go]'); if (b){ select(b.dataset.go, true); svg.scrollIntoView({behavior:'smooth', block:'center'}); } });
 } else $('#mapBlk').hidden = true;
 

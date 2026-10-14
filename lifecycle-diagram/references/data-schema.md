@@ -1,155 +1,153 @@
 # Data file schema
 
-A data file is plain JavaScript that sets `window.DATA`. Using JS (not JSON) lets payload
-examples be template literals and lets you share snippets via `const`s:
+A data file is plain JavaScript that sets `window.DATA`. JS rather than JSON lets payload
+examples be template literals and lets you share snippets through `const`s:
 
 ```js
 window.DATA = (function(){
-  const DETAIL = { title:'Get Order Detail', method:'GET', path:'/orders/{id}', tag:'doc', req:`…`, res:`…` };
-  return { name:'Acme Pay', nodes:[ … ], edges:[ … ], outcomes:[ … ] };
+  const GET = { title:'Get item', method:'GET', path:'/items/{id}', tag:'doc', req:`…`, res:`…` };
+  return { name:'Acme Items', nodes:[ … ], edges:[ … ], outcomes:[ … ] };
 })();
 ```
 
-Fields marked * are required. HTML is allowed in fields documented as "html"; everything
-else is escaped.
+It is a working file: keep it in the work dir (`build.mjs --workdir <name>`), never next to
+the page. A built page embeds it, and `build.mjs <page.html> --extract <data.js>` gets it back.
+
+Fields marked * are required. Fields marked html accept HTML; everything else is escaped.
+Write every human-readable field in the reader's language.
 
 ## Page
 
-| Field | Type | Notes |
-|---|---|---|
-| `name`* | string | Shown large in the title, coloured with the accent |
-| `title` | string | `<title>`; defaults to `name` |
-| `titlePrefix` | string | Text before `name` in the h1 (default `วงจรชีวิต `) |
-| `lang` | string | `<html lang>`, default `th` |
-| `accent` | `{light, dark}` hex | Provider colour; dark is a lighter tint for dark mode |
-| `lead` | html | One or two sentences: what one "thing" is and the single most surprising fact |
-| `facts` | `[{k, v(html)}]` | 4–6 quick facts: status level, base URL, detail call cost, webhook ack deadline, retries… |
-| `callout` | html | The #1 trap, starting with ⚠ |
-| `crumb` | string | Small text left of the nav |
-| `nav` | `[{label, href, current}]` | Links to sibling pages (relative paths) |
-| `rows` | `[string]` | Label for each diagram row, top to bottom |
-| `effects` | `{key: {label, tone}}` | Optional side-effect legend; tone ∈ blue, green, gray, amber, red, purple |
-| `actors` | `{key: label}` | Extra/override labels for `who` (built-ins: buyer, seller, user, us, platform, carrier, system, admin, bank) |
-| `ui` | object | Override any UI string — see the `UI` defaults at the top of the template script (e.g. `outTitle`, `apis`, `basicsTitle`, `mapTitle`, `mapSub`(html), `mappedLabel`, `effectLabel`, `legend:{main,cancel,ret,exc,back}`) |
-| `tags` / `tagDesc` | `{key: text}` | Override tag labels / footer descriptions |
-| `basics` | `[{title, tag, body(html), code, codeLabel}]` | "Before your first API call" cards. Omit to hide the section |
-| `mapTable` | bool | `false` hides the mapping table |
-| `sources` | `[html]` | Footer list of sources |
-| `footer` | html | Last footer line (e.g. "built from repo X on <date>") |
-| `colW`, `rowH`, `nodeW`, `top` | number | Grid tuning; defaults 215 / 122 / 156 / 26 |
+| Field | Notes |
+|---|---|
+| `name`* | Subject of the page, shown large in the accent colour |
+| `title` | Browser tab title; defaults to `name` |
+| `titlePrefix` | Text before `name` in the heading (default `Lifecycle · `) |
+| `lang` | `<html lang>` (default `en`) — set it to the page's language |
+| `accent` | `{light, dark}` hex colours; `dark` is a lighter tint for dark mode |
+| `lead` (html) | One or two sentences: what one "thing" is, plus the single most surprising fact |
+| `facts` | `[{k, v(html)}]` — 4–6 quick facts: where status lives, base URL, cost of a detail read, event ack deadline, limits |
+| `callout` (html) | The top trap, starting with ⚠ |
+| `crumb`, `nav` | Breadcrumb text and `[{label, href, current}]` links to sibling pages (relative) |
+| `rows` | Label per diagram row, top to bottom |
+| `effects` | `{key: {label, tone}}` — optional side effect per status, shown as a dot; tone ∈ blue, green, gray, amber, red, purple |
+| `actors` | `{key: label}` — labels for `who`; there are no built-ins |
+| `ui` | Overrides for built-in labels (see the `UI` object at the top of the template script), e.g. `outTitle`, `apis`, `webhook`, `basicsTitle`, `mapTitle`, `mapSub` (html), `mappedLabel`, `effectLabel`, `legend:{main,cancel,ret,exc,back}`, `kinds:{…}` |
+| `tags`, `tagDesc` | Overrides for tag labels and their footer descriptions |
+| `basics` | `[{title, tag, body(html), code, codeLabel}]` — "before your first API call" cards; omit to hide |
+| `mapTable` | `false` hides the raw → mapped table |
+| `sources` (html list), `footer` (html) | Provenance shown in the footer |
+| `colW`, `rowH`, `nodeW`, `top` | Grid tuning; defaults 215 / 122 / 156 / 26 |
 
 ## Nodes
 
 ```js
-{ id:'AWAITING_SHIPMENT', raw:'AWAITING_SHIPMENT', th:'รอร้านจัดส่ง', col:2, row:0,
-  kind:'main', level:'order', mapped:'awaiting_fulfilment', effect:'consume',
-  who:['platform'], tag:'doc', desc:'…html…', webhook:{…api}, apis:[{…api}], gotchas:['…html…'] }
+{ id:'IN_REVIEW', raw:'pull_request: open · review_requested', code:'IN_REVIEW', short:'Awaiting review',
+  col:3, row:0, kind:'main', level:'pull request', mapped:'in_review', effect:'none',
+  who:['dev'], tag:'gen', desc:'…html…', webhook:{…api}, apis:[{…api}], gotchas:['…html…'] }
 ```
 
 | Field | Notes |
 |---|---|
-| `id`* | Unique, used in edges/outcomes and the URL hash |
-| `raw`* | Exact provider value(s). Long lists are fine here (shown in the panel) |
-| `code` | Short text for the box when `raw` is too long (box fits ~18 mono chars at default width; or set `w`). Also use it to disambiguate when two objects share a raw value, e.g. `code:'refund: succeeded'` |
-| `th` | Human meaning, short (second line of the box) |
-| `col`*, `row`* | Grid position; `col` may be fractional (`2.5`) |
-| `w` | Box width override (default 156) |
-| `kind` | `start` · `main` (default) · `side` (dashed: sub-state / not in the main enum) · `ok` (success end) · `cancel` (cancel/failure) · `ret` (return/reversal/refund) · `exc` (exception, e.g. package-level) |
-| `end` | Force the END badge on/off. Default: `ok`/`cancel` nodes with no non-`back` outgoing edge. Set `end:true` on a state that ends the main object's life but still has arrows into a *related* object (e.g. `succeeded` → refund/dispute), and on terminal `ret` nodes |
-| `level` | Where this status lives: `order`, `order item`, `package (sub_status)`, `cancellation (separate)`… |
-| `mapped` | Internal/normalised status this maps to |
+| `id`* | Unique; used by edges, outcomes and the URL hash |
+| `raw`* | The exact value(s) the source system uses — shown in full in the panel |
+| `code` | Text in the box when `raw` is long (~18 monospace chars fit at default width) or ambiguous across objects (`refund: succeeded`) |
+| `short` | Short human meaning, the box's second line (`th` is accepted as a pre-1.0 alias) |
+| `col`*, `row`* | Grid position; `col` may be fractional |
+| `w` | Box width override |
+| `kind` | `start` · `main` (default) · `side` (dashed: sub-state or signal outside the main enum) · `ok` (success end) · `cancel` (cancel / failure) · `ret` (reversal: return, refund, rollback) · `exc` (exception, e.g. delivery or infrastructure level) |
+| `end` | Force the END badge. Default: `ok`/`cancel` nodes without a non-`back` outgoing edge. Set it on a state that ends the main object but still points into a related object, and on terminal `ret` nodes |
+| `level` | Which object/level holds this status (`order item`, `pull request`, `refund (separate object)`) |
+| `mapped` | The normalised/internal status it maps to |
 | `effect` | Key into `effects` |
-| `who` | Actor keys that cause entering this state |
+| `who` | Keys into `actors` |
 | `tag` | Confidence of the status itself |
-| `desc` | html — what it means, what the integrator should do here |
-| `webhook` | api object — what you receive when entering this state |
-| `apis` | api objects — calls you'd make while in this state (first one opens by default) |
-| `gotchas` | html list |
-| `map` | `false` excludes it from the mapping table (for sub-states that aren't raw statuses) |
+| `desc` (html) | What it means and what the integrator does here |
+| `webhook` | api object — the event received on entering this status |
+| `apis` | api objects — calls made while in this status (the first one opens by default) |
+| `gotchas` | html list of pitfalls |
+| `map` | `false` keeps it out of the table (for things that are not raw statuses) |
 
-## API / webhook object
+## API / event object
 
 ```js
-{ title:'Ship Package — นัดขนส่ง', method:'POST', path:'/fulfillment/202309/packages/{id}/ship', tag:'doc',
+{ title:'Merge pull request', method:'PUT', path:'/repos/{owner}/{repo}/pulls/{n}/merge', tag:'gen',
   note:'…html: limits, idempotency, error codes…',
-  req:`POST …\n\n{ "handover_method": "PICKUP" }`, reqLabel:'Request',
-  res:`{ "code": 0, "data": {} }`, resLabel:'Response' }
+  req:`PUT …\n\n{ "merge_method": "squash" }`, reqLabel:'Request',
+  res:`{ "merged": true }`, resLabel:'Response' }
 ```
 
-`method` styles: GET, POST, PUT, PATCH, DELETE, PUSH/EVENT (for webhooks). For a webhook, use
-`reqLabel:'ที่เราจะได้รับ'` and `res` = the reply we must send (`HTTP/1.1 200 OK` + rules in `note`).
-Code blocks get light JSON highlighting; `// comments` render as comments (keep a space before `//`).
+`method` is styled for GET, POST, PUT, PATCH, DELETE and PUSH/EVENT. For an event, put what
+arrives in `req` (label it accordingly) and the required reply in `res`, with the
+verification and deadline rules in `note`. Code blocks get light JSON highlighting; `//`
+comments (preceded by a space) render as comments.
 
 ## Edges
 
 ```js
-{ from:'AWAITING_SHIPMENT', to:'AWAITING_COLLECTION', label:'นัดส่ง', why:'ร้านเรียก Ship Package', kind:'main' }
+{ from:'IN_REVIEW', to:'MERGED', label:'merge', why:'Approved and required checks green', kind:'main' }
 ```
 
 | Field | Notes |
 |---|---|
 | `from`*, `to`* | Node ids |
-| `kind` | `main` (default) · `cancel` · `ret` · `exc` (dashed) · `back` (dotted: loop back / rejection) |
-| `label` | Text on the diagram — short |
-| `why` | Longer reason, shown in the detail panel's transitions list |
-| `fs`, `ts` | Exit / entry side: `t` `b` `l` `r` (default picked from relative position) |
-| `fo`, `to_` | Pixel offset of the exit / entry point along that side |
-| `k` | Control-point distance: larger = leaves straighter before curving |
+| `kind` | `main` (default) · `cancel` · `ret` · `exc` (dashed) · `back` (dotted: loop back, rejection, retry) |
+| `label` | Short text on the canvas |
+| `why` | Full reason, shown in the detail panel |
+| `fs`, `ts` | Exit / entry side: `t` `b` `l` `r` (default from relative position) |
+| `fo`, `to_` | Pixel offset of the exit / entry point along its side |
+| `k` | Control distance — larger leaves straighter before bending |
 | `lx`, `ly` | Label nudge in pixels |
 
 ## Outcomes
 
 ```js
-{ id:'cancel', tone:'cancel', label:'ยกเลิกหลังจ่าย', path:['UNPAID','ON_HOLD','AWAITING_SHIPMENT','CANCEL_REQ','CANCELLED'], desc:'…html…' }
+{ id:'cancel', tone:'cancel', label:'Cancelled', path:['BACKLOG','READY','CANCELLED'], desc:'…html…' }
 ```
 
 `tone` ∈ ok, cancel, ret, exc. Each consecutive pair in `path` should be an edge (the linter
-warns otherwise). A node may repeat (e.g. a retry loop).
+warns otherwise); a node may repeat, e.g. a rework loop.
 
-## Modelling cases that aren't plain statuses
+## Modelling beyond plain statuses
 
-- **Related objects with their own statuses** (refund, dispute, return request, cancellation
-  request): give them their own row(s), `kind:'ret'`/`'cancel'`/`'exc'`, a `level` that names
-  the object, and `code` prefixed with the object (`dispute: lost`).
-- **Events that aren't a status** (e.g. `payment_intent.payment_failed`, a package exception):
-  `kind:'side'` or `'exc'`, `map:false`, and say in `desc` that the object's status does not change.
-- **Flags inside a status** (e.g. `is_cancel_pending`): usually not a node — put it in `desc`
-  or a gotcha.
+- **Related objects with their own statuses** (refund, return request, review, deployment):
+  give them their own row, a fitting `kind`, a `level` naming the object, and a `code`
+  prefixed with the object when values collide.
+- **Signals that are not a status** (a failure event, a label, a delivery exception):
+  `kind:'side'` or `'exc'` with `map:false`, and say in `desc` that the main status does not change.
+- **Flags inside a status**: usually not a node — mention them in `desc` or a pitfall.
+- **Derived status** (no single field holds it): `raw` describes the combination of signals.
 
 ## Confidence tags
 
 | Tag | Use when |
 |---|---|
-| `doc` | You read it in official documentation (directly or via a research note citing it) |
-| `repo` | Proven by working code, tests or sandbox runs |
-| `unv` | A source explicitly says it is unverified/conflicting |
-| `gen` | General knowledge you did not verify in the sources — say so in the note |
+| `doc` | Read in official documentation, directly or via a note that cites it |
+| `repo` | Proven by working code, tests or a sandbox run |
+| `unv` | A source says it is unconfirmed or contradictory |
+| `gen` | General knowledge not checked against a source — say so in the note |
 
-When there are no sources at all, everything is `gen` and the tag stops carrying signal. Then:
-check the riskiest payloads against official docs if you can browse (and tag those `doc`);
-mark individual shaky fields with `// ไม่แน่ใจ` comments; and state in `lead` or `footer`
-that the page is from memory and list what to verify first.
+When nothing could be checked, everything is `gen` and the tag stops carrying signal: verify
+the riskiest payloads if you can browse (and tag them `doc`), mark individually shaky fields
+with a `//` comment, and say in `lead` or `footer` that the page is unverified and what to
+check first.
 
-## Layout rules of thumb
+## Layout
 
-- **Rows carry meaning**: row 0 = happy path left→right; row 1 = side states and
-  exceptions (placed between the two main states they sit between, often at `.5` columns);
-  row 2 = cancellation / reversal branch with terminal states. Add rows only if needed.
-- Keep the main path ≤ 7 columns; past ~1600 px of viewBox the text renders small.
-- An edge leaving a box downward travels straight down first: don't put another box directly
-  below its source unless that box is the target. Shift side states half a column instead.
-- Converging edges (several states → one cancel state) read best when the target sits under
-  the middle of its sources.
-- Edges into a terminal from far away: try `fs:'b', ts:'l'` or `ts:'r'` so they arrive
-  from the side along the bottom row instead of cutting diagonally across row 1.
-- Back edges (`back`) between vertically stacked nodes: offset them (`fo`/`to_` ±30) so the
-  two directions don't overlap.
-- **Skipping ahead in the same row** (one state can jump to several later ones): draw an arc
-  over the top with `fs:'t', ts:'t'`, raise `top` (e.g. 70–90) to make room, and stagger
-  several arcs with different `k`/`fo` so they nest instead of overlapping.
-- **Density.** Past ~20 edges or ~6 crossings (the linter prints the count) the diagram
-  stops being readable. Cut edges that are implied or rare and move them into a `why` or a
-  gotcha; split related objects onto their own row; prefer one representative edge into a
-  shared terminal over one edge from every source.
-- Row labels sit at the top-left of each row: keep them short; the linter warns when a node
-  overlaps one (edges may cross them; the label has a halo).
+- **Rows carry meaning**: row 0 is the main path left to right; row 1 holds side states and
+  exceptions, placed between the states they belong to (often at `.5` columns); lower rows
+  hold cancellation and reversal branches with their terminal states.
+- Keep the main path at about 7 columns or fewer; beyond ~1600 px of width the text gets small.
+- An edge leaving a box downward drops straight first, so keep the space directly below a
+  source free unless it holds the target; shift side states half a column instead.
+- A state that many others can reach (a shared cancel state) reads best under the middle of
+  its sources. Edges arriving from far away read better entering from the side along their
+  own row (`fs:'b', ts:'l'` or `ts:'r'`, with a large `k`) than cutting diagonally across rows.
+- Opposite edges between stacked nodes: offset them (`fo`/`to_` ±30) so they don't overlap.
+- **Jumping ahead in the same row**: arc over the top with `fs:'t', ts:'t'`, raise `top`
+  (70–90) for room, and vary `k`/`fo` so several arcs nest instead of crossing.
+- **Density**: past ~20 edges or ~6 crossings (the linter prints the count) the diagram stops
+  being readable. Drop edges that are implied or rare and carry them in a `why` or a pitfall;
+  prefer one representative edge into a shared terminal over one from every source.
+- Row labels sit at the top-left of each row; keep them short. Edges may cross them (the
+  label has a halo), but nodes must not.
