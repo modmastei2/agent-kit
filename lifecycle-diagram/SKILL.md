@@ -1,6 +1,6 @@
 ---
 name: lifecycle-diagram
-version: 1.0.0
+version: 1.0.1
 description: Build an interactive, self-contained HTML page explaining the lifecycle (state machine) of one entity — every status it can be in, how it moves between them, every way it can end, what each status means, and the API calls, events and payloads an integrator deals with at each step. Use whenever someone wants to see, explain, document or compare a status flow — of orders, payments, refunds, shipments, subscriptions, tickets, work items, deployments, approvals, accounts or any other entity with statuses — even if they don't ask for HTML or a diagram. Also use it to compare one lifecycle across several providers (one linked page per provider).
 ---
 

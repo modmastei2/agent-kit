@@ -261,6 +261,8 @@ const TAGDESC = Object.assign({doc:'read in official documentation', repo:'prove
 const WHO = D.actors || {};   // actor keys -> labels; unknown keys are shown as-is
 const EFF = D.effects || null;   // e.g. {deployed:{label:'Running in production', tone:'green'}, ...}
 const effOf = n => EFF && n.effect ? EFF[n.effect] : null;
+// pages with no events or calls at all (a non-API process) drop the API column entirely
+const HAS_API = D.nodes.some(n => n.webhook || (n.apis||[]).length);
 
 // `th` is the pre-1.0 name of `short`; keep reading it so older pages still rebuild
 D.nodes.forEach(n => { if (n.short == null && n.th != null) n.short = n.th; });
@@ -361,15 +363,15 @@ function select(id, user){
         ${tag(n.tag)}
       </div>
     </div>
-    <div class="pb pcols"><div>
+    <div class="pb${HAS_API ? ' pcols' : ''}"><div>
       <h3>${esc(UI.meaning)}</h3><p>${n.desc || ''}</p>
       ${ins.length || outs.length ? `<h3>${esc(UI.transitions)}</h3><div class="trans">${ins.map(e => tr(e,'in')).join('')}${outs.map(e => tr(e,'out')).join('')}${!outs.length ? `<div class="tr"><span class="dir">■</span><span class="why">${esc(UI.terminal)}</span></div>` : ''}</div>` : ''}
       ${(n.gotchas||[]).length ? `<h3>${esc(UI.gotchas)}</h3><ul class="gotcha">${n.gotchas.map(g => `<li>${g}</li>`).join('')}</ul>` : ''}
-    </div><div>
+    </div>${HAS_API ? `<div>
       ${n.webhook ? `<h3>${esc(UI.webhook)}</h3>${apiCard(n.webhook, true)}` : ''}
       <h3>${esc(UI.apis)}</h3>
       ${(n.apis||[]).length ? n.apis.map((a,i) => apiCard(a, i===0 && !n.webhook)).join('') : `<p class="empty">${esc(UI.noApi)}</p>`}
-    </div></div>`;
+    </div>` : ''}</div>`;
   if (user){ const r = $('#panel').getBoundingClientRect(); if (r.top > innerHeight - 160) $('#panel').scrollIntoView({behavior:'smooth', block:'start'}); }
 }
 $('#panel').addEventListener('click', ev => { const b = ev.target.closest('[data-go]'); if (b) select(b.dataset.go, true); });

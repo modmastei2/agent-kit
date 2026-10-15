@@ -1,0 +1,568 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Butterfly Lifecycle</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f5f4f0; --surface:#ffffff; --surface-2:#efede7; --border:#e0ddd5; --border-strong:#c9c5bb;
+  --text:#1c1b19; --muted:#5f5c56; --faint:#8f8b83;
+  --ok:#1d7f46; --ok-bg:#e2f2e8; --cancel:#b8342a; --cancel-bg:#fae5e2; --ret:#a86400; --ret-bg:#fcefd8;
+  --exc:#6a45bf; --exc-bg:#ece6fa; --back:#7d7a73;
+  --t-blue:#2b66c9; --t-green:#1d7f46; --t-gray:#9a968e; --t-amber:#a86400; --t-red:#b8342a; --t-purple:#6a45bf;
+  --code-bg:#1f1e1c; --code-text:#e9e6de; --code-key:#8cc4ff; --code-str:#b5d98a; --code-num:#f2b56b; --code-com:#8a877f; --code-kw:#e59adf;
+  --brand:#b45309; --brand-soft:rgba(180,83,9,0.09);
+  --shadow:0 1px 2px rgba(0,0,0,.04),0 6px 20px rgba(0,0,0,.05);
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#151513; --surface:#1d1d1b; --surface-2:#262624; --border:#33322f; --border-strong:#4a4844;
+    --text:#ecebe6; --muted:#aaa69e; --faint:#7d7a73;
+    --ok:#5cc489; --ok-bg:#1b3326; --cancel:#ef7a6f; --cancel-bg:#3a1f1c; --ret:#efb256; --ret-bg:#3a2d17;
+    --exc:#b49aff; --exc-bg:#2b2440; --back:#8f8b83;
+    --t-blue:#79a8ff; --t-green:#5cc489; --t-gray:#7d7a73; --t-amber:#efb256; --t-red:#ef7a6f; --t-purple:#b49aff;
+    --code-bg:#121211;
+    --brand:#fbbf24; --brand-soft:rgba(251,191,36,0.14);
+    --shadow:0 1px 2px rgba(0,0,0,.3),0 6px 20px rgba(0,0,0,.25);
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#151513; --surface:#1d1d1b; --surface-2:#262624; --border:#33322f; --border-strong:#4a4844;
+  --text:#ecebe6; --muted:#aaa69e; --faint:#7d7a73;
+  --ok:#5cc489; --ok-bg:#1b3326; --cancel:#ef7a6f; --cancel-bg:#3a1f1c; --ret:#efb256; --ret-bg:#3a2d17;
+  --exc:#b49aff; --exc-bg:#2b2440; --back:#8f8b83;
+  --t-blue:#79a8ff; --t-green:#5cc489; --t-gray:#7d7a73; --t-amber:#efb256; --t-red:#ef7a6f; --t-purple:#b49aff;
+  --code-bg:#121211;
+  --brand:#fbbf24; --brand-soft:rgba(251,191,36,0.14);
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 6px 20px rgba(0,0,0,.25);
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--text);font-family:"IBM Plex Sans Thai",system-ui,sans-serif;font-size:15px;line-height:1.6;-webkit-font-smoothing:antialiased}
+code,pre,.mono{font-family:"JetBrains Mono",ui-monospace,Consolas,monospace}
+a{color:var(--brand)}
+.wrap{max-width:1400px;margin:0 auto;padding:0 16px}
+header.top{border-bottom:1px solid var(--border);background:var(--surface)}
+.nav{display:flex;align-items:center;gap:6px;padding:12px 0;flex-wrap:wrap}
+.nav .crumb{color:var(--faint);font-size:13px;margin-right:8px}
+.nav a{font-size:13px;text-decoration:none;color:var(--muted);padding:5px 12px;border-radius:999px;border:1px solid transparent}
+.nav a:hover{border-color:var(--border)}
+.nav a.cur{background:var(--brand-soft);color:var(--brand);font-weight:600}
+.nav .sp{flex:1}
+.iconbtn{background:none;border:1px solid var(--border);color:var(--muted);border-radius:8px;padding:5px 10px;font:inherit;font-size:13px;cursor:pointer}
+.iconbtn:hover{color:var(--text);border-color:var(--border-strong)}
+.hero{padding:22px 0 26px}
+.hero h1{margin:0 0 6px;font-size:clamp(24px,3.2vw,34px);line-height:1.25;letter-spacing:-.01em}
+.hero h1 .b{color:var(--brand)}
+.hero p.lead{margin:0;color:var(--muted);max-width:860px}
+.facts{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}
+.fact{background:var(--surface-2);border-radius:10px;padding:7px 12px;font-size:13px}
+.fact b{display:block;font-size:11px;color:var(--faint);font-weight:500;letter-spacing:.02em}
+.callout{margin-top:16px;border-left:3px solid var(--brand);background:var(--brand-soft);padding:10px 14px;border-radius:0 10px 10px 0;font-size:14px;max-width:960px}
+.callout:empty{display:none}
+section.blk{padding:26px 0 6px}
+section.blk[hidden]{display:none}
+h2{font-size:19px;margin:0 0 4px}
+.sub{color:var(--muted);font-size:14px;margin:0 0 14px}
+.outs{display:flex;flex-wrap:wrap;gap:8px}
+.out{font:inherit;font-size:14px;cursor:pointer;border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:12px;padding:8px 14px;display:flex;align-items:center;gap:8px;text-align:left}
+.out:hover{border-color:var(--border-strong)}
+.out .sw{width:10px;height:10px;border-radius:50%;flex:none}
+.out[aria-pressed="true"]{border-color:var(--text);box-shadow:inset 0 0 0 1px var(--text)}
+.tone-ok .sw{background:var(--ok)} .tone-cancel .sw{background:var(--cancel)} .tone-ret .sw{background:var(--ret)} .tone-exc .sw{background:var(--exc)}
+.steps{margin-top:12px;min-height:44px;display:flex;flex-wrap:wrap;align-items:center;gap:6px;font-size:13px}
+.steps .hint{color:var(--faint)}
+.step{font-family:"JetBrains Mono",monospace;font-size:12px;border:1px solid var(--border);background:var(--surface);padding:4px 9px;border-radius:8px;cursor:pointer;color:var(--text)}
+.step.cur{background:var(--brand);border-color:var(--brand);color:#fff}
+.steps .ar{color:var(--faint)}
+.outdesc{color:var(--muted);font-size:14px;margin-top:6px;max-width:900px}
+.grid{display:grid;grid-template-columns:1fr;gap:14px;margin-top:14px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:16px;box-shadow:var(--shadow)}
+.diag{padding:10px 10px 6px;position:relative}
+.diag .scroller{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.diag svg{display:block;width:100%;min-width:980px;height:auto}
+.legend{display:flex;flex-wrap:wrap;gap:14px;padding:8px 8px 4px;border-top:1px solid var(--border);margin-top:6px;font-size:12px;color:var(--muted)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.lg-line{width:22px;height:0;border-top:2px solid}
+.lg-dot{width:9px;height:9px;border-radius:50%}
+.node{cursor:pointer;outline:none}
+.node .nb{fill:var(--surface);stroke:var(--border-strong);stroke-width:1.3;transition:stroke .15s,fill .15s}
+.node.k-side .nb{stroke-dasharray:5 4}
+.node.k-ok .nb{fill:var(--ok-bg);stroke:var(--ok)}
+.node.k-cancel .nb{fill:var(--cancel-bg);stroke:var(--cancel)}
+.node.k-ret .nb{fill:var(--ret-bg);stroke:var(--ret)}
+.node.k-exc .nb{fill:var(--exc-bg);stroke:var(--exc);stroke-dasharray:5 4}
+.node.k-start .nb{stroke:var(--brand);stroke-width:1.8}
+.node:hover .nb,.node:focus-visible .nb{stroke:var(--text)}
+.node.sel .nb{stroke:var(--brand);stroke-width:3}
+.node .nc{font-family:"JetBrains Mono",monospace;font-weight:700;font-size:12.5px;fill:var(--text);text-anchor:middle}
+.node .nl{font-size:11.5px;fill:var(--muted);text-anchor:middle}
+.node .dot{stroke:var(--surface);stroke-width:1.5}
+.node .tm{font-size:9.5px;font-weight:700;letter-spacing:.06em;text-anchor:start}
+.k-ok .tm{fill:var(--ok)} .k-cancel .tm{fill:var(--cancel)} .k-ret .tm{fill:var(--ret)} .k-exc .tm{fill:var(--exc)}
+.tn-blue{--tn:var(--t-blue)} .tn-green{--tn:var(--t-green)} .tn-gray{--tn:var(--t-gray)} .tn-amber{--tn:var(--t-amber)} .tn-red{--tn:var(--t-red)} .tn-purple{--tn:var(--t-purple)}
+.dot[class*="tn-"]{fill:var(--tn)} .lg-dot[class*="tn-"]{background:var(--tn)}
+.edge path{fill:none;stroke-width:1.6;transition:opacity .2s,stroke-width .2s}
+.e-main path{stroke:var(--text)} .e-cancel path{stroke:var(--cancel)} .e-ret path{stroke:var(--ret)} .e-exc path{stroke:var(--exc);stroke-dasharray:5 4} .e-back path{stroke:var(--back);stroke-dasharray:3 4}
+.edge text{font-size:10.5px;fill:var(--muted);text-anchor:middle;paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round}
+.mk-main{fill:var(--text)} .mk-cancel{fill:var(--cancel)} .mk-ret{fill:var(--ret)} .mk-exc{fill:var(--exc)} .mk-back{fill:var(--back)}
+svg.dim .node:not(.on){opacity:.22}
+svg.dim .edge:not(.on){opacity:.12}
+svg.dim .edge.on path{stroke-width:3}
+svg.dim .edge.on text{fill:var(--text);font-weight:600}
+.rowlab{font-size:10.5px;fill:var(--faint);letter-spacing:.08em;font-weight:600;paint-order:stroke;stroke:var(--surface);stroke-width:5px;stroke-linejoin:round}
+.rowline{stroke:var(--border);stroke-dasharray:2 5}
+.panel{scroll-margin-top:12px}
+.pcols{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:8px 28px}
+@media (max-width:900px){.pcols{grid-template-columns:1fr}}
+.ph{padding:18px 18px 12px;border-bottom:1px solid var(--border)}
+.ph .kind{font-size:11px;font-weight:700;letter-spacing:.07em;color:var(--faint);text-transform:uppercase}
+.ph .raw{font-family:"JetBrains Mono",monospace;font-size:20px;font-weight:700;word-break:break-all;margin:2px 0 0}
+.ph .th{color:var(--muted);font-size:15px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;align-items:center}
+.chip{font-size:12px;border-radius:7px;padding:3px 8px;background:var(--surface-2);color:var(--muted)}
+.chip b{color:var(--text);font-weight:600}
+.chip[class*="tn-"] b{color:var(--tn)}
+.pb{padding:14px 18px 18px}
+.pb h3{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);margin:16px 0 8px;font-weight:700}
+.pb h3:first-child{margin-top:0}
+.pb p{margin:0 0 8px}
+.trans{display:flex;flex-direction:column;gap:5px}
+.tr{display:flex;align-items:baseline;gap:8px;font-size:13.5px}
+.tr button{font-family:"JetBrains Mono",monospace;font-size:12px;border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:6px;padding:1px 7px;cursor:pointer;flex:none}
+.tr button:hover{border-color:var(--brand);color:var(--brand)}
+.tr .dir{color:var(--faint);font-size:12px;flex:none;width:14px}
+.tr .why{color:var(--muted)}
+ul.gotcha{margin:0;padding-left:18px;font-size:14px}
+ul.gotcha li{margin-bottom:6px}
+.api{border:1px solid var(--border);border-radius:12px;margin-bottom:8px;background:var(--surface)}
+.api>summary{list-style:none;cursor:pointer;padding:10px 12px;display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px}
+.api>summary::-webkit-details-marker{display:none}
+.api>summary .t{flex-basis:100%;font-size:14px;font-weight:600}
+.api>summary code{font-size:12px;color:var(--muted);word-break:break-all}
+.api[open]>summary{border-bottom:1px solid var(--border)}
+.api .ab{padding:10px 12px 12px;font-size:14px}
+.m{font-family:"JetBrains Mono",monospace;font-size:10.5px;font-weight:700;padding:2px 6px;border-radius:5px;background:var(--surface-2);color:var(--muted)}
+.m-GET{color:var(--t-blue)} .m-POST{color:var(--t-green)} .m-PUT,.m-PATCH{color:var(--t-amber)} .m-DELETE{color:var(--t-red)} .m-PUSH,.m-EVENT{color:var(--t-purple)}
+.tag{font-size:10.5px;font-weight:600;padding:2px 7px;border-radius:999px;margin-left:auto}
+.t-doc{background:var(--ok-bg);color:var(--ok)}
+.t-repo{background:var(--brand-soft);color:var(--brand)}
+.t-unv{background:var(--ret-bg);color:var(--ret)}
+.t-gen{background:var(--surface-2);color:var(--muted);border:1px dashed var(--border-strong)}
+.cb{margin-top:10px;border-radius:10px;overflow:hidden;background:var(--code-bg)}
+.cbh{display:flex;align-items:center;justify-content:space-between;padding:6px 10px;font-size:11.5px;color:#a9a59c;border-bottom:1px solid rgba(255,255,255,.07)}
+.cbh button{background:none;border:1px solid rgba(255,255,255,.15);color:#cfcbc2;border-radius:6px;font:inherit;font-size:11px;padding:1px 8px;cursor:pointer}
+.cbh button:hover{color:#fff;border-color:rgba(255,255,255,.35)}
+pre{margin:0;padding:10px 12px;overflow:auto;font-size:12px;line-height:1.55;color:var(--code-text);max-height:420px}
+.j-k{color:var(--code-key)} .j-s{color:var(--code-str)} .j-n{color:var(--code-num)} .j-c{color:var(--code-com);font-style:italic} .j-b{color:var(--code-kw)}
+.empty{color:var(--faint);font-size:14px}
+.bgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:12px}
+.bcard{padding:16px}
+.bcard h4{margin:0 0 6px;font-size:15px;display:flex;align-items:center;gap:8px}
+.bcard p,.bcard li{font-size:14px;color:var(--muted)}
+.bcard ul{padding-left:18px;margin:6px 0}
+.bcard p{margin:0 0 6px}
+.tbl{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--border);vertical-align:top}
+th{font-size:12px;color:var(--faint);font-weight:600;letter-spacing:.03em;background:var(--surface-2)}
+td code{font-size:12.5px}
+td .rowbtn{font-family:"JetBrains Mono",monospace;font-size:12.5px;font-weight:600;background:none;border:none;color:var(--brand);cursor:pointer;padding:0;text-align:left}
+.eff{font-weight:600;color:var(--tn,var(--muted))}
+footer{padding:30px 0 50px;color:var(--faint);font-size:13px}
+footer ul{padding-left:18px}
+.kbd{font-family:"JetBrains Mono",monospace;font-size:11.5px;background:var(--surface-2);padding:1px 6px;border-radius:5px}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <nav class="nav" id="nav"></nav>
+    <div class="hero">
+      <h1 id="h1"></h1>
+      <p class="lead" id="lead"></p>
+      <div class="facts" id="facts"></div>
+      <div class="callout" id="callout"></div>
+    </div>
+  </div>
+</header>
+<main class="wrap">
+  <section class="blk">
+    <h2 id="outTitle"></h2>
+    <p class="sub" id="outSub"></p>
+    <div class="outs" id="outs"></div>
+    <div class="steps" id="steps"></div>
+    <div class="outdesc" id="outdesc"></div>
+    <div class="grid">
+      <div class="card diag">
+        <div class="scroller"><svg id="svg" role="img"></svg></div>
+        <div class="legend" id="legend"></div>
+      </div>
+      <aside class="card panel" id="panel" aria-live="polite"></aside>
+    </div>
+  </section>
+  <section class="blk" id="basicsBlk">
+    <h2 id="basicsTitle"></h2>
+    <p class="sub" id="basicsSub"></p>
+    <div class="bgrid" id="basics"></div>
+  </section>
+  <section class="blk" id="mapBlk">
+    <h2 id="mapTitle"></h2>
+    <p class="sub" id="mapSub"></p>
+    <div class="card tbl"><table id="map"></table></div>
+  </section>
+</main>
+<footer class="wrap">
+  <div id="tagLegend"></div>
+  <ul id="sources"></ul>
+  <div id="foot"></div>
+</footer>
+<script>
+// Shared geometry for the lifecycle diagram.
+// Inlined into the page by build.mjs AND evaluated by build.mjs --check,
+// so the validator measures exactly what the browser draws.
+function makeLayout(D) {
+  const NW = D.nodeW || 156, NH = 56, CW = D.colW || 215, RH = D.rowH || 122, PAD = 22, TOP = D.top || 26;
+  const byId = Object.fromEntries(D.nodes.map(n => [n.id, n]));
+  function box(n) {
+    const w = n.w || NW; const cx = PAD + n.col * CW + NW / 2;
+    return { x: cx - w / 2, y: TOP + n.row * RH, w, h: NH, cx, cy: TOP + n.row * RH + NH / 2 };
+  }
+  function anchor(b, side, off) {
+    off = off || 0;
+    if (side === 't') return [b.cx + off, b.y, 0, -1];
+    if (side === 'b') return [b.cx + off, b.y + b.h, 0, 1];
+    if (side === 'l') return [b.x, b.cy + off, -1, 0];
+    return [b.x + b.w, b.cy + off, 1, 0];
+  }
+  function edgeGeom(e) {
+    const A = box(byId[e.from]), B = box(byId[e.to]);
+    let fs = e.fs, ts = e.ts;
+    if (!fs || !ts) {
+      const dy = B.cy - A.cy;
+      if (Math.abs(dy) < 4) { if (B.cx > A.cx) { fs = fs || 'r'; ts = ts || 'l'; } else { fs = fs || 'l'; ts = ts || 'r'; } }
+      else if (dy > 0) { fs = fs || 'b'; ts = ts || 't'; } else { fs = fs || 't'; ts = ts || 'b'; }
+    }
+    const [x1, y1, dx1, dy1] = anchor(A, fs, e.fo);
+    const [x2, y2, dx2, dy2] = anchor(B, ts, e.to_);
+    const dist = Math.hypot(x2 - x1, y2 - y1);
+    const k = e.k || Math.max(26, Math.min(110, dist * .42));
+    const c1 = [x1 + dx1 * k, y1 + dy1 * k], c2 = [x2 + dx2 * (k + 6), y2 + dy2 * (k + 6)];
+    const ex = x2 + dx2 * 3, ey = y2 + dy2 * 3;
+    const pts = [[x1, y1], c1, c2, [ex, ey]];
+    const at = t => { const u = 1 - t; return [0, 1].map(i => u*u*u*pts[0][i] + 3*u*u*t*pts[1][i] + 3*u*t*t*pts[2][i] + t*t*t*pts[3][i]); };
+    const mid = at(.5);
+    return { d: `M${x1},${y1} C${c1[0]},${c1[1]} ${c2[0]},${c2[1]} ${ex},${ey}`, mx: mid[0] + (e.lx || 0), my: mid[1] + (e.ly || 0), at };
+  }
+  // rough rendered width of an edge label at 10.5px; combining marks (any script) take no width
+  function labelWidth(s) { return String(s || '').replace(/\p{M}/gu, '').length * 6 + 6; }
+  const maxCol = Math.max(...D.nodes.map(n => n.col)), maxRow = Math.max(...D.nodes.map(n => n.row));
+  const W = PAD * 2 + maxCol * CW + NW + 20, H = TOP + maxRow * RH + NH + 24;
+  return { NW, NH, CW, RH, PAD, TOP, W, H, byId, box, edgeGeom, labelWidth };
+}
+if (typeof module !== 'undefined') module.exports = { makeLayout };
+
+</script>
+<script>
+/*__DATA_BEGIN__*/
+window.DATA = (function(){
+return {
+name:'Butterfly', title:'Butterfly Lifecycle', lang:'en',
+accent:{light:'#b45309', dark:'#fbbf24'},
+lead:'One "thing" = <b>one butterfly</b>, from a single egg to the adult that lays the next generation. Inside the chrysalis the caterpillar does not just grow wings — most of its body <b>breaks down and is rebuilt</b> from small clusters of cells it carried all along.',
+facts:[
+  {k:'Stages', v:'egg → caterpillar → chrysalis → adult'},
+  {k:'Egg', v:'about 3–7 days'},
+  {k:'Caterpillar', v:'about 2–4 weeks, 4–5 molts'},
+  {k:'Chrysalis', v:'about 1–2 weeks'},
+  {k:'Adult', v:'about 2–4 weeks, longer for overwintering generations'}
+],
+callout:'⚠ <b>Most never become adults.</b> Eggs and caterpillars are eaten, parasitised or die of weather; only a small share of eggs survive to fly. Durations vary a lot by species and temperature.',
+rows:['DEVELOPMENT','MOLTING · DORMANCY','LOSSES'],
+top:76, colW:228,
+effects:{
+  leaves:{label:'Eats leaves', tone:'green'},
+  none:{label:'Does not eat', tone:'gray'},
+  nectar:{label:'Drinks nectar', tone:'amber'},
+  dead:{label:'None (dead)', tone:'red'}
+},
+actors:{mother:'Mother butterfly', hormones:'Hormones', weather:'Day length & temperature', predator:'Predator', parasitoid:'Parasitic wasp or fly', self:'The butterfly itself'},
+mapTable:true,
+ui:{
+  mappedLabel:'Phase', colMapped:'Phase', mapTitle:'Stage → phase', colRaw:'Stage', colLevel:'Where',
+  mapSub:'The four classic phases of complete metamorphosis.',
+  effectLabel:'Feeding', colEffect:'Feeding', whoLabel:'Driven by'
+},
+nodes:[
+ {id:'EGG', raw:'Egg (ovum)', code:'EGG', short:'Laid on a host plant', col:0, row:0, kind:'start', level:'on a leaf', mapped:'Egg', effect:'none', who:['mother'], tag:'gen',
+  desc:'Laid singly or in clusters on the specific plant the caterpillar will need to eat. The embryo develops inside the shell.',
+  gotchas:['Many species can only eat one plant family — an egg on the wrong plant usually means a starved caterpillar.']},
+ {id:'LARVA', raw:'Larva (caterpillar)', code:'CATERPILLAR', short:'Eats and grows', col:1, row:0, level:'on the host plant', mapped:'Larva', effect:'leaves', who:['self'], tag:'gen',
+  desc:'The eating stage. It often eats its own eggshell first, then the host plant, growing many times its hatching size. Each growth step between molts is called an <b>instar</b>.',
+  gotchas:['Almost all growth happens here; the adult does not grow at all.']},
+ {id:'MOLT', raw:'Molting (ecdysis)', code:'MOLT', short:'Sheds its skin', col:0.6, row:1, kind:'side', level:'on the host plant', mapped:'Larva', effect:'none', who:['hormones'], tag:'gen', map:false,
+  desc:'The skin cannot stretch, so the caterpillar stops eating, grows a new skin underneath and splits out of the old one — usually 4–5 times. Still a caterpillar afterwards.'},
+ {id:'PREPUPA', raw:'Prepupa (wandering, J-hang)', code:'PREPUPA', short:'Stops eating, hangs', col:2, row:0, level:'on a stem or wall', mapped:'Larva', effect:'none', who:['hormones'], tag:'gen',
+  desc:'Fully grown, it stops eating, often wanders away from the plant, spins a silk pad and hangs — many species in a "J" shape.'},
+ {id:'PUPA', raw:'Pupa (chrysalis)', code:'CHRYSALIS', short:'Body rebuilt inside', col:3, row:0, level:'hanging, motionless', mapped:'Pupa', effect:'none', who:['hormones'], tag:'gen',
+  desc:'The last caterpillar skin splits to reveal the chrysalis. Inside, most larval tissue breaks down and adult structures — wings, legs, eyes — form from <b>imaginal discs</b>.',
+  gotchas:['A chrysalis is not a cocoon: moths spin silk cocoons, butterflies mostly form a bare chrysalis.']},
+ {id:'DIAPAUSE', raw:'Diapause (overwintering)', code:'DIAPAUSE', short:'Paused for winter', col:3.6, row:1, kind:'side', level:'sheltered spot', mapped:'Pupa', effect:'none', who:['weather'], tag:'gen', map:false,
+  desc:'Short days and cold switch development off for months. Species differ in <b>which</b> stage pauses — egg, caterpillar, chrysalis or adult; the chrysalis is shown here.'},
+ {id:'ECLOSION', raw:'Eclosion (emerging)', code:'ECLOSION', short:'Wings still crumpled', col:4, row:0, level:'on the empty chrysalis', mapped:'Adult', effect:'none', who:['self'], tag:'gen',
+  desc:'The adult splits the chrysalis and hangs from it, pumping fluid into its soft, crumpled wings until they expand and harden — usually within a few hours.'},
+ {id:'ADULT', raw:'Adult (imago)', code:'ADULT', short:'Flies, feeds, mates', col:5, row:0, level:'flying', mapped:'Adult', effect:'nectar', who:['self'], tag:'gen',
+  desc:'The reproductive stage. It sips nectar (or fruit, sap, mineral-rich puddles) through a coiled proboscis and searches for a mate.'},
+ {id:'REPRODUCED', raw:'Mated and laid eggs', code:'REPRODUCED', short:'Cycle restarts', col:6, row:0, kind:'ok', level:'host plants', mapped:'Adult', effect:'dead', who:['mother'], tag:'gen',
+  desc:'A female may lay dozens to hundreds of eggs across many plants. The adult dies within days to weeks; the eggs start the cycle again.'},
+ {id:'EGG_FAILED', raw:'Egg does not hatch', code:'EGG FAILED', short:'Never hatched', col:0, row:2, kind:'cancel', level:'on a leaf', mapped:'Egg', effect:'dead', who:['predator','weather'], tag:'gen',
+  desc:'Unfertilised, eaten by ants or beetles, parasitised by tiny egg wasps, or killed by heat or rain.'},
+ {id:'EATEN', raw:'Eaten by a predator', code:'EATEN', short:'Birds, wasps, spiders', col:1.8, row:2, kind:'cancel', level:'anywhere', mapped:'—', effect:'dead', who:['predator'], tag:'gen',
+  desc:'The most common ending. Caterpillars are the main target, but adults are caught too; bright colours often warn that a species is toxic, but not every predator listens.'},
+ {id:'PARASITISED', raw:'Parasitoids emerge instead', code:'PARASITISED', short:'Parasites emerge', col:3, row:2, kind:'exc', end:true, level:'inside the chrysalis', mapped:'Pupa', effect:'dead', who:['parasitoid'], tag:'gen',
+  desc:'A wasp or fly laid eggs inside the caterpillar earlier. The caterpillar still forms a chrysalis, but parasitoid larvae eat it from inside and adults of the parasite emerge instead.',
+  gotchas:['Often invisible until the end — the chrysalis looks normal, then darkens and never hatches a butterfly.']},
+ {id:'WINGS_FAILED', raw:'Failed eclosion', code:'WINGS FAILED', short:'Wings never expand', col:4.6, row:2, kind:'cancel', level:'on the empty chrysalis', mapped:'Adult', effect:'dead', who:['self'], tag:'gen',
+  desc:'If the adult falls or cannot hang freely while its wings fill, they harden crumpled and it can never fly.'}
+],
+edges:[
+ {from:'EGG', to:'LARVA', label:'hatches', why:'The caterpillar chews its way out of the shell'},
+ {from:'LARVA', to:'MOLT', fs:'b', ts:'r', label:'molt', why:'Hormones trigger a molt once the skin is tight'},
+ {from:'MOLT', to:'LARVA', kind:'back', fs:'t', ts:'l', label:'next instar', lx:-28, ly:6, why:'A bigger caterpillar resumes eating'},
+ {from:'LARVA', to:'PREPUPA', label:'grown', why:'After the final instar it stops eating'},
+ {from:'PREPUPA', to:'PUPA', label:'pupates', why:'The final skin splits to reveal the chrysalis'},
+ {from:'PUPA', to:'ECLOSION', label:'emerges', why:'Adult development complete'},
+ {from:'ECLOSION', to:'ADULT', label:'dries', why:'Wings expand and harden within hours'},
+ {from:'ADULT', to:'REPRODUCED', label:'breeds', why:'Mating, then egg-laying on host plants'},
+ {from:'REPRODUCED', to:'EGG', kind:'back', fs:'t', ts:'t', k:70, label:'next generation', why:'The eggs start a new lifecycle'},
+ {from:'PUPA', to:'DIAPAUSE', fo:20, label:'short days', why:'Day length and cold switch development off'},
+ {from:'DIAPAUSE', to:'PUPA', kind:'back', fs:'l', ts:'b', to_:-25, label:'spring', why:'Warmth and longer days resume development'},
+ {from:'EGG', to:'EGG_FAILED', kind:'cancel', label:'never hatches', why:'Infertile, eaten, parasitised or killed by weather'},
+ {from:'LARVA', to:'EATEN', kind:'cancel', fo:30, label:'eaten', why:'Birds, wasps, spiders and other predators'},
+ {from:'PUPA', to:'PARASITISED', kind:'exc', fs:'b', ts:'t', fo:-35, to_:-35, label:'parasites', why:'Parasitoid larvae, laid earlier in the caterpillar, consume it'},
+ {from:'ECLOSION', to:'WINGS_FAILED', kind:'cancel', label:'falls', why:'Wings cannot expand properly'}
+],
+outcomes:[
+ {id:'full', tone:'ok', label:'Full metamorphosis', path:['EGG','LARVA','MOLT','LARVA','PREPUPA','PUPA','ECLOSION','ADULT','REPRODUCED'], desc:'The complete cycle: four very different bodies, one animal. Molting repeats several times; one is shown.'},
+ {id:'winter', tone:'ok', label:'Overwinters, then completes', path:['EGG','LARVA','PREPUPA','PUPA','DIAPAUSE','PUPA','ECLOSION','ADULT','REPRODUCED'], desc:'Development pauses for months and resumes in spring.'},
+ {id:'egg', tone:'cancel', label:'Egg never hatches', path:['EGG','EGG_FAILED'], desc:'Lost before the caterpillar ever appears.'},
+ {id:'eaten', tone:'cancel', label:'Caterpillar eaten', path:['EGG','LARVA','EATEN'], desc:'The most common way a butterfly\'s life ends.'},
+ {id:'parasite', tone:'exc', label:'Parasitised', path:['EGG','LARVA','PREPUPA','PUPA','PARASITISED'], desc:'Looks normal until wasps or flies emerge from the chrysalis.'},
+ {id:'wings', tone:'cancel', label:'Failed emergence', path:['EGG','LARVA','PREPUPA','PUPA','ECLOSION','WINGS_FAILED'], desc:'Makes it all the way to adult but can never fly.'}
+],
+sources:['General biology of butterflies (order Lepidoptera) — not checked against a specific source. Durations and which stage overwinters differ by species and climate.']
+};
+})();
+
+/*__DATA_END__*/
+</script>
+<script>
+(function(){
+const D = window.DATA;
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+/* ---- configurable vocabulary (Thai defaults; override any key in D.ui / D.tags / D.actors / D.effects) ---- */
+// Neutral English defaults. A page is written in its reader's language by overriding
+// these through D.ui / D.tags / D.tagDesc — nothing here should need editing per domain.
+const UI = Object.assign({
+  titlePrefix:'Lifecycle · ', themeBtn:'Toggle theme',
+  outTitle:'Where can it end?', outSub:'Pick a path to highlight it · click a status in the strip below, or press ▶ to walk it step by step',
+  noPath:'No path selected — the diagram shows every transition', play:'▶ Walk through', pause:'❚❚ Pause', clear:'Clear',
+  mappedLabel:'Maps to', effectLabel:'Effect', whoLabel:'Triggered by',
+  meaning:'Meaning', transitions:'Comes from / goes to', terminal:'No way out — the lifecycle ends here',
+  webhook:'Webhook / event you receive', apis:'API calls at this step', noApi:'Nothing to call here — wait for the other side, then read the result with the detail call',
+  gotchas:'Watch out', copy:'Copy', copied:'Copied', req:'Request', res:'Response',
+  basicsTitle:'Before your first API call', basicsSub:'Every request in the panel above depends on these',
+  mapTitle:'Raw status → mapped status', mapSub:'',
+  colRaw:'Raw status', colMeaning:'Meaning', colLevel:'Level', colMapped:'Maps to', colEffect:'Effect',
+  tagsTitle:'Confidence tags:', end:'END'
+}, D.ui || {});
+UI.legend = Object.assign({main:'Main path', cancel:'Cancel / failure', ret:'Reversal / return', exc:'Exception', back:'Loop back'}, (D.ui||{}).legend || {});
+UI.kinds = Object.assign({start:'Start', main:'Intermediate', side:'Side state', ok:'End · success', cancel:'End · cancelled', cancelMid:'Cancelling', ret:'Reversal / return', exc:'Exception'}, (D.ui||{}).kinds || {});
+const TAG = Object.assign({doc:'Official docs', repo:'Verified', unv:'UNVERIFIED', gen:'General knowledge'}, D.tags || {});
+const TAGDESC = Object.assign({doc:'read in official documentation', repo:'proven by working code, tests or a sandbox', unv:'a source says it is unconfirmed', gen:'not verified against a source — check before relying on it'}, D.tagDesc || {});
+const WHO = D.actors || {};   // actor keys -> labels; unknown keys are shown as-is
+const EFF = D.effects || null;   // e.g. {deployed:{label:'Running in production', tone:'green'}, ...}
+const effOf = n => EFF && n.effect ? EFF[n.effect] : null;
+// pages with no events or calls at all (a non-API process) drop the API column entirely
+const HAS_API = D.nodes.some(n => n.webhook || (n.apis||[]).length);
+
+// `th` is the pre-1.0 name of `short`; keep reading it so older pages still rebuild
+D.nodes.forEach(n => { if (n.short == null && n.th != null) n.short = n.th; });
+const L = makeLayout(D);
+const { byId, box, edgeGeom } = L;
+const isEnd = n => n.end ?? (['ok','cancel'].includes(n.kind) && !D.edges.some(e => e.from === n.id && e.kind !== 'back'));
+
+/* theme */
+const root = document.documentElement;
+try { const t = localStorage.getItem('lcd-theme'); if (t) root.dataset.theme = t; } catch(e){}
+
+/* header */
+const nav = (D.nav || []).map(l => `<a href="${esc(l.href)}"${l.current ? ' class="cur"' : ''}>${esc(l.label)}</a>`).join('');
+$('#nav').innerHTML = `${D.crumb ? `<span class="crumb">${esc(D.crumb)}</span>` : ''}${nav}<span class="sp"></span><button class="iconbtn" id="themeBtn" type="button">${esc(UI.themeBtn)}</button>`;
+$('#themeBtn').onclick = () => {
+  const dark = root.dataset.theme ? root.dataset.theme === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+  root.dataset.theme = dark ? 'light' : 'dark';
+  try { localStorage.setItem('lcd-theme', root.dataset.theme); } catch(e){}
+};
+$('#h1').innerHTML = `${esc(D.titlePrefix ?? UI.titlePrefix)}<span class="b">${esc(D.name)}</span>`;
+$('#lead').innerHTML = D.lead || '';
+$('#facts').innerHTML = (D.facts||[]).map(f => `<div class="fact"><b>${esc(f.k)}</b>${f.v}</div>`).join('');
+$('#callout').innerHTML = D.callout || '';
+$('#outTitle').textContent = UI.outTitle; $('#outSub').textContent = UI.outSub;
+$('#svg').setAttribute('aria-label', D.name);
+
+/* legend */
+const usedKinds = new Set(D.edges.map(e => e.kind || 'main'));
+const lineStyle = {main:'', cancel:'', ret:'', exc:';border-top-style:dashed', back:';border-top-style:dotted'};
+const lineColor = {main:'--text', cancel:'--cancel', ret:'--ret', exc:'--exc', back:'--back'};
+$('#legend').innerHTML = ['main','cancel','ret','exc','back'].filter(k => usedKinds.has(k)).map(k => `<span><i class="lg-line" style="border-color:var(${lineColor[k]})${lineStyle[k]}"></i>${esc(UI.legend[k])}</span>`).join('')
+  + (EFF ? Object.values(EFF).map(e => `<span><i class="lg-dot tn-${e.tone||'gray'}"></i>${esc(e.label)}</span>`).join('') : '');
+
+/* svg */
+const svg = $('#svg');
+svg.setAttribute('viewBox', `0 0 ${L.W} ${L.H}`);
+let s = `<defs>${['main','cancel','ret','exc','back'].map(k => `<marker id="ar-${k}" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="mk-${k}" d="M0,0 L10,5 L0,10 z"/></marker>`).join('')}</defs>`;
+(D.rows||[]).forEach((r,i) => { if (i>0){ const y = L.TOP + i*L.RH - 18; s += `<line class="rowline" x1="8" x2="${L.W-8}" y1="${y}" y2="${y}"/>`; } });
+D.edges.forEach((e,i) => {
+  const g = edgeGeom(e); const kind = e.kind || 'main';
+  s += `<g class="edge e-${kind}" data-i="${i}"><path d="${g.d}" marker-end="url(#ar-${kind})"/>${e.label ? `<text x="${g.mx}" y="${g.my+3.5}">${esc(e.label)}</text>` : ''}</g>`;
+});
+(D.rows||[]).forEach((r,i) => { s += `<text class="rowlab" x="10" y="${L.TOP + i*L.RH - 8}">${esc(r)}</text>`; });
+D.nodes.forEach(n => {
+  const b = box(n); const kind = n.kind || 'main'; const ef = effOf(n);
+  s += `<g class="node k-${kind}" data-id="${esc(n.id)}" tabindex="0" role="button" aria-label="${esc(n.raw)} ${esc(n.short)}">
+    <rect class="nb" x="${b.x}" y="${b.y}" width="${b.w}" height="${b.h}" rx="11"/>
+    ${isEnd(n) ? `<text class="tm" x="${b.x+8}" y="${b.y+13}">${esc(UI.end)}</text>` : ''}
+    ${ef ? `<circle class="dot tn-${ef.tone||'gray'}" cx="${b.x+b.w-11}" cy="${b.y+11}" r="4.5"/>` : ''}
+    <text class="nc" x="${b.cx}" y="${b.y+27}">${esc(n.code || n.raw)}</text>
+    <text class="nl" x="${b.cx}" y="${b.y+44}">${esc(n.short)}</text></g>`;
+});
+svg.innerHTML = s;
+svg.querySelectorAll('.node').forEach(g => {
+  g.addEventListener('click', () => select(g.dataset.id, true));
+  g.addEventListener('keydown', ev => { if (ev.key==='Enter'||ev.key===' '){ ev.preventDefault(); select(g.dataset.id, true);} });
+});
+
+/* code blocks */
+function hl(src){
+  return esc(src).replace(/((?<=^|\s)\/\/[^\n]*)|("(?:\\.|[^"\\\n])*")(\s*:)?|\b(true|false|null)\b|((?<![\w\/.\-])-?\d+(?:\.\d+)?\b)/gm,
+    (m,c,str,colon,kw,num) => c ? `<span class="j-c">${c}</span>` : str ? (colon ? `<span class="j-k">${str}</span>${colon}` : `<span class="j-s">${str}</span>`) : kw ? `<span class="j-b">${kw}</span>` : `<span class="j-n">${num}</span>`);
+}
+let codeSeq = 0; const codeStore = {};
+function codeBlock(label, src){
+  const id = 'c' + (++codeSeq); codeStore[id] = src;
+  return `<div class="cb"><div class="cbh"><span>${esc(label)}</span><button type="button" data-copy="${id}">${esc(UI.copy)}</button></div><pre>${hl(src)}</pre></div>`;
+}
+document.addEventListener('click', ev => {
+  const b = ev.target.closest('[data-copy]'); if (!b || !navigator.clipboard) return;
+  navigator.clipboard.writeText(codeStore[b.dataset.copy]).then(() => { b.textContent = UI.copied; setTimeout(() => b.textContent = UI.copy, 1200); }, () => {});
+});
+const tag = t => t ? `<span class="tag t-${t}">${esc(TAG[t] || t)}</span>` : '';
+function apiCard(a, open){
+  return `<details class="api"${open?' open':''}><summary><span class="t">${esc(a.title)}</span>${a.method ? `<span class="m m-${esc(a.method)}">${esc(a.method)}</span>` : ''}${a.path ? `<code>${esc(a.path)}</code>` : ''}${tag(a.tag)}</summary>
+    <div class="ab">${a.note ? `<p>${a.note}</p>` : ''}${a.req ? codeBlock(a.reqLabel || UI.req, a.req) : ''}${a.res ? codeBlock(a.resLabel || UI.res, a.res) : ''}</div></details>`;
+}
+
+/* detail panel */
+function select(id, user){
+  const n = byId[id]; if (!n) return;
+  svg.querySelectorAll('.node').forEach(g => g.classList.toggle('sel', g.dataset.id === id));
+  document.querySelectorAll('.step').forEach(b => b.classList.toggle('cur', b.dataset.id === id));
+  if (user) { try { history.replaceState(null, '', '#' + encodeURIComponent(id)); } catch(e){} }
+  const ins = D.edges.filter(e => e.to === id), outs = D.edges.filter(e => e.from === id);
+  const tr = (e, dir) => { const o = byId[dir==='in' ? e.from : e.to]; return `<div class="tr"><span class="dir">${dir==='in'?'←':'→'}</span><button type="button" data-go="${esc(o.id)}">${esc(o.code||o.raw)}</button><span class="why">${esc(e.why || e.label || '')}</span></div>`; };
+  const kind = n.kind || 'main'; const ef = effOf(n);
+  const kindLabel = kind === 'cancel' && !isEnd(n) ? UI.kinds.cancelMid : UI.kinds[kind];
+  $('#panel').innerHTML = `
+    <div class="ph">
+      <div class="kind">${esc(kindLabel)}${n.level ? ' · ' + esc(n.level) : ''}</div>
+      <div class="raw">${esc(n.raw)}</div>
+      <div class="th">${esc(n.short)}</div>
+      <div class="chips">
+        ${n.mapped ? `<span class="chip">${esc(UI.mappedLabel)} <b class="mono">${esc(n.mapped)}</b></span>` : ''}
+        ${ef ? `<span class="chip tn-${ef.tone||'gray'}">${esc(UI.effectLabel)} <b>${esc(ef.label)}</b></span>` : ''}
+        ${n.who ? `<span class="chip">${esc(UI.whoLabel)} <b>${n.who.map(w => esc(WHO[w] || w)).join(' / ')}</b></span>` : ''}
+        ${tag(n.tag)}
+      </div>
+    </div>
+    <div class="pb${HAS_API ? ' pcols' : ''}"><div>
+      <h3>${esc(UI.meaning)}</h3><p>${n.desc || ''}</p>
+      ${ins.length || outs.length ? `<h3>${esc(UI.transitions)}</h3><div class="trans">${ins.map(e => tr(e,'in')).join('')}${outs.map(e => tr(e,'out')).join('')}${!outs.length ? `<div class="tr"><span class="dir">■</span><span class="why">${esc(UI.terminal)}</span></div>` : ''}</div>` : ''}
+      ${(n.gotchas||[]).length ? `<h3>${esc(UI.gotchas)}</h3><ul class="gotcha">${n.gotchas.map(g => `<li>${g}</li>`).join('')}</ul>` : ''}
+    </div>${HAS_API ? `<div>
+      ${n.webhook ? `<h3>${esc(UI.webhook)}</h3>${apiCard(n.webhook, true)}` : ''}
+      <h3>${esc(UI.apis)}</h3>
+      ${(n.apis||[]).length ? n.apis.map((a,i) => apiCard(a, i===0 && !n.webhook)).join('') : `<p class="empty">${esc(UI.noApi)}</p>`}
+    </div>` : ''}</div>`;
+  if (user){ const r = $('#panel').getBoundingClientRect(); if (r.top > innerHeight - 160) $('#panel').scrollIntoView({behavior:'smooth', block:'start'}); }
+}
+$('#panel').addEventListener('click', ev => { const b = ev.target.closest('[data-go]'); if (b) select(b.dataset.go, true); });
+
+/* outcomes */
+let playTimer = null;
+function stopPlay(){ clearInterval(playTimer); playTimer = null; const p = $('#playBtn'); if (p) p.textContent = UI.play; }
+function showOutcome(o){
+  stopPlay();
+  document.querySelectorAll('.out').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.id === o?.id)));
+  svg.classList.toggle('dim', !!o);
+  svg.querySelectorAll('.node,.edge').forEach(el => el.classList.remove('on'));
+  if (!o){ $('#steps').innerHTML = `<span class="hint">${esc(UI.noPath)}</span>`; $('#outdesc').textContent=''; return; }
+  o.path.forEach(id => svg.querySelector(`.node[data-id="${CSS.escape(id)}"]`)?.classList.add('on'));
+  for (let i=0; i<o.path.length-1; i++)
+    D.edges.forEach((e,j) => { if (e.from===o.path[i] && e.to===o.path[i+1]) svg.querySelector(`.edge[data-i="${j}"]`).classList.add('on'); });
+  $('#steps').innerHTML = `<button class="iconbtn" id="playBtn" type="button">${esc(UI.play)}</button><button class="iconbtn" id="clrBtn" type="button">${esc(UI.clear)}</button>` +
+    o.path.map((id,i) => `${i?'<span class="ar">→</span>':''}<button type="button" class="step" data-id="${esc(id)}">${esc(byId[id].code||byId[id].raw)}</button>`).join('');
+  $('#outdesc').innerHTML = o.desc || '';
+  $('#steps').querySelectorAll('.step').forEach(b => b.onclick = () => { stopPlay(); select(b.dataset.id, true); });
+  $('#clrBtn').onclick = () => showOutcome(null);
+  $('#playBtn').onclick = () => {
+    if (playTimer) return stopPlay();
+    let i = 0; select(o.path[0]); $('#playBtn').textContent = UI.pause;
+    playTimer = setInterval(() => { i++; if (i >= o.path.length) return stopPlay(); select(o.path[i]); }, 1400);
+  };
+  select(o.path[o.path.length-1], false);
+}
+$('#outs').innerHTML = (D.outcomes||[]).map(o => `<button type="button" class="out tone-${o.tone||'ok'}" data-id="${esc(o.id)}" aria-pressed="false"><span class="sw"></span>${esc(o.label)}</button>`).join('');
+$('#outs').querySelectorAll('.out').forEach(b => b.onclick = () => {
+  const o = D.outcomes.find(x => x.id === b.dataset.id);
+  showOutcome(b.getAttribute('aria-pressed') === 'true' ? null : o);
+});
+showOutcome(null);
+
+/* basics */
+if ((D.basics||[]).length){
+  $('#basicsTitle').textContent = UI.basicsTitle; $('#basicsSub').textContent = UI.basicsSub;
+  $('#basics').innerHTML = D.basics.map(b => `<div class="card bcard"><h4>${esc(b.title)}${tag(b.tag)}</h4>${b.body||''}${b.code ? codeBlock(b.codeLabel||'', b.code) : ''}</div>`).join('');
+} else $('#basicsBlk').hidden = true;
+
+/* mapping table */
+const rows = D.nodes.filter(n => n.map !== false);
+if (D.mapTable !== false && rows.length){
+  $('#mapTitle').textContent = UI.mapTitle; $('#mapSub').innerHTML = UI.mapSub || '';
+  const hasMapped = rows.some(n => n.mapped), hasEff = !!EFF, hasLevel = rows.some(n => n.level);
+  $('#map').innerHTML = `<thead><tr><th>${esc(UI.colRaw)}</th><th>${esc(UI.colMeaning)}</th>${hasLevel?`<th>${esc(UI.colLevel)}</th>`:''}${hasMapped?`<th>${esc(UI.colMapped)}</th>`:''}${hasEff?`<th>${esc(UI.colEffect)}</th>`:''}</tr></thead><tbody>` +
+    rows.map(n => { const ef = effOf(n); return `<tr><td><button class="rowbtn" type="button" data-go="${esc(n.id)}">${esc(n.raw)}</button></td><td>${esc(n.short)}</td>${hasLevel?`<td>${esc(n.level||'')}</td>`:''}${hasMapped?`<td><code>${esc(n.mapped||'—')}</code></td>`:''}${hasEff?`<td class="eff${ef?' tn-'+(ef.tone||'gray'):''}">${esc(ef?.label||'—')}</td>`:''}</tr>`; }).join('') + '</tbody>';
+  $('#map').addEventListener('click', ev => { const b = ev.target.closest('[data-go]'); if (b){ select(b.dataset.go, true); svg.scrollIntoView({behavior:'smooth', block:'center'}); } });
+} else $('#mapBlk').hidden = true;
+
+/* footer */
+const usedTags = new Set([...D.nodes.map(n => n.tag), ...D.nodes.flatMap(n => [...(n.apis||[]), n.webhook].filter(Boolean).map(a => a.tag)), ...(D.basics||[]).map(b => b.tag)].filter(Boolean));
+$('#tagLegend').innerHTML = usedTags.size ? `<b>${esc(UI.tagsTitle)}</b> ` + [...usedTags].map(t => `${tag(t)} ${esc(TAGDESC[t] || '')}`).join(' · ') : '';
+$('#sources').innerHTML = (D.sources||[]).map(x => `<li>${x}</li>`).join('');
+$('#foot').innerHTML = D.footer || '';
+
+const h = decodeURIComponent(location.hash.slice(1));
+select(byId[h] ? h : D.nodes[0].id, false);
+})();
+</script>
+</body>
+</html>
