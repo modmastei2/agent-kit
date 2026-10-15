@@ -14,10 +14,16 @@
 // plugin with .claude-plugin/plugin.json) from there as <name>@skills-dir.
 // Only git-tracked files are installed.
 //
+// A mod's plugin.json may carry install hints under metadata.agentKit:
+//   requires    names of other items installed alongside it
+//   statusLine  the statusLine command to set, {dir} being the folder Claude
+//               Code loads the mod from; an existing statusLine of something
+//               else is kept unless --status-line is given
+//
 // Usage:
 //   agent-kit [--project [path]]           interactive picker (TTY only)
 //   agent-kit list [--project [path]]
-//   agent-kit add <skill|mod> <name> [--project [path]] [--to both|claude|agents] [--copy]
+//   agent-kit add <skill|mod> <name> [--project [path]] [--to both|claude|agents] [--copy] [--status-line]
 // --project without a path means the current directory. --to defaults to
 // both (linked) for global and claude for a project; --copy makes "both" two
 // copies instead of a link. Run as `node bin/agent-kit.mjs ...` from a clone,
@@ -165,6 +171,20 @@ function dependencies(item, items) {
   return [...deps].sort();
 }
 
+// The metadata.agentKit hints of a mod's plugin.json; none for a skill.
+function installHints(item) {
+  if (item.kind !== "mod") return {};
+  try {
+    const manifest = JSON.parse(
+      fs.readFileSync(path.join(repoRoot, item.relDir, ".claude-plugin", "plugin.json"), "utf8"),
+    );
+    const hints = manifest.metadata?.agentKit;
+    return hints && typeof hints === "object" ? hints : {};
+  } catch {
+    return {};
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Status
 
@@ -250,10 +270,44 @@ function linkInto(link, target, log) {
   }
 }
 
-// Installs one item into a scope with a layout. Returns log lines (warnings
-// start with "Warning:"); throws an Error with a user-facing message when the
-// item can't be installed.
-function installItem(item, scope, layout) {
+// The settings file a statusLine goes in: the user's own for global, and the
+// project's local (uncommitted) one, since the command holds an absolute path.
+function settingsFile(scope) {
+  return path.join(scope.base, ".claude", scope.id === "global" ? "settings.json" : "settings.local.json");
+}
+
+// Points statusLine at the item's command. Another tool's statusLine is kept
+// unless replace is set; one that already runs this item is updated in place.
+function setStatusLine(item, scope, command, replace) {
+  const file = settingsFile(scope);
+  let settings = {};
+  if (fs.existsSync(file)) {
+    try {
+      settings = JSON.parse(fs.readFileSync(file, "utf8"));
+    } catch {
+      return [`Warning: could not read ${file}; set statusLine yourself:\n  "statusLine": ${JSON.stringify({ type: "command", command })}`];
+    }
+  }
+  const current = settings.statusLine?.command;
+  if (current === command) return [];
+  if (current && !current.includes(item.name) && !replace) {
+    return [
+      `Warning: ${file} already has a statusLine (${current}); kept it.`,
+      `Run again with --status-line to replace it with ${item.name}.`,
+    ];
+  }
+  settings.statusLine = { ...settings.statusLine, type: "command", command };
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  fs.writeFileSync(file, JSON.stringify(settings, null, 2) + "\n");
+  return [`Set statusLine in ${file}`];
+}
+
+// Installs one item into a scope with a layout, then what its install hints
+// ask for. Returns log lines (warnings start with "Warning:"); throws an Error
+// with a user-facing message when the item can't be installed.
+function installItem(item, scope, layout, options = {}) {
+  const installing = options.installing ?? new Set();
+  installing.add(item.name);
   // Everything installs flat into one folder per location, so a name must be
   // unique across categories and across kinds.
   const items = allItems();
@@ -294,6 +348,21 @@ function installItem(item, scope, layout) {
       log.push(`Warning: needs ${depName} installed next to it in ${where} (${scope.label}).`);
     }
   }
+
+  const hints = installHints(item);
+  for (const reqName of Array.isArray(hints.requires) ? hints.requires : []) {
+    const req = items.find((i) => i.name === reqName);
+    if (!req) {
+      log.push(`Warning: needs ${reqName}, which this repo doesn't have.`);
+    } else if (!installing.has(req.name) && statusIn(req, scope).state !== "installed") {
+      log.push(`Installing ${req.name}, which ${item.name} uses:`);
+      log.push(...installItem(req, scope, layout, { ...options, installing }));
+    }
+  }
+  if (typeof hints.statusLine === "string" && LAYOUTS[layout].folders.includes("claude")) {
+    const dir = loc.claude.split(path.sep).join("/");
+    log.push(...setStatusLine(item, scope, hints.statusLine.replaceAll("{dir}", dir), options.replaceStatusLine));
+  }
   return log;
 }
 
@@ -325,7 +394,7 @@ function cmdList(scopes) {
   }
 }
 
-function cmdAdd(kind, name, scope, layout) {
+function cmdAdd(kind, name, scope, layout, options) {
   const item = listItems(kind).find((i) => i.name === name);
   if (!item) {
     const available = listItems(kind).map((i) => i.name).join("\n  ") || "(none)";
@@ -333,7 +402,7 @@ function cmdAdd(kind, name, scope, layout) {
     process.exit(1);
   }
   try {
-    for (const line of installItem(item, scope, layout)) console.log(line);
+    for (const line of installItem(item, scope, layout, options)) console.log(line);
   } catch (err) {
     console.error(err.message);
     process.exit(1);
@@ -702,12 +771,13 @@ function runPicker(initialProject) {
 
 // ---------------------------------------------------------------------------
 
-// Pulls --project [path], --to <where> and --copy out of argv.
+// Pulls --project [path], --to <where>, --copy and --status-line out of argv.
 function parseArgs(argv) {
   const positionals = [];
   let project = null;
   let to = null;
   let copy = false;
+  let replaceStatusLine = false;
   for (let i = 0; i < argv.length; i++) {
     if (argv[i] === "--project") {
       const next = argv[i + 1];
@@ -716,11 +786,13 @@ function parseArgs(argv) {
       to = argv[++i];
     } else if (argv[i] === "--copy") {
       copy = true;
+    } else if (argv[i] === "--status-line") {
+      replaceStatusLine = true;
     } else {
       positionals.push(argv[i]);
     }
   }
-  return { positionals, project, to, copy };
+  return { positionals, project, to, copy, replaceStatusLine };
 }
 
 function usage() {
@@ -729,18 +801,19 @@ function usage() {
       "Usage:",
       "  agent-kit [--project [path]]                     interactive picker",
       "  agent-kit list [--project [path]]",
-      "  agent-kit add <skill|mod> <name> [--project [path]] [--to both|claude|agents] [--copy]",
+      "  agent-kit add <skill|mod> <name> [--project [path]] [--to both|claude|agents] [--copy] [--status-line]",
       "",
       "--project    work on <path> (default: current directory) instead of your home folder",
       "--to         both: .agents and .claude (default for global)",
       "             claude: .claude/skills only (default for a project)",
       "             agents: .agents only",
       "--copy       with --to both, make two copies instead of linking .claude to .agents",
+      "--status-line  replace an existing statusLine with the one a mod sets (kept by default)",
     ].join("\n"),
   );
 }
 
-const { positionals, project, to, copy } = parseArgs(process.argv.slice(2));
+const { positionals, project, to, copy, replaceStatusLine } = parseArgs(process.argv.slice(2));
 const [cmd, kind, name] = positionals;
 
 if (project && !fs.existsSync(project)) {
@@ -763,7 +836,7 @@ if (!cmd) {
   const scope = scopes[scopes.length - 1];
   const where = to ?? (defaultLayout(scope) === "link" ? "both" : "claude");
   const layout = where === "both" ? (copy ? "copies" : "link") : where;
-  cmdAdd(kind, name, scope, layout);
+  cmdAdd(kind, name, scope, layout, { replaceStatusLine });
 } else {
   usage();
   process.exit(1);
