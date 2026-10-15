@@ -5,17 +5,21 @@
 Never commit automatically. Always wait for the user to explicitly ask for a commit,
 even after finishing edits, bumping a skill's or mod's version, or running `bin/agent-kit.mjs add`.
 
-## Commit messages
+# Commit Message Convention
 
-Use semantic commit messages: `<type>(<scope>): <description>`
+Use semantic commit messages: `<type>(<scope>): <subject>`
 
-- `type`: `feat`, `fix`, `docs`, `chore`, `refactor`, `test`
-- `scope`: the skill or mod folder name (e.g. `to-note`, `setup-workspace`), omit if repo-wide
-- `description`: imperative, lowercase, no trailing period
+- `type`: `feat`, `fix`, `refactor`, `perf`, `docs`, `test`, `build`, `ci`, `chore`, `revert`
+- `scope`: the affected area (feature folder, module, package) — omit it rather than invent one
+- `subject`: imperative mood, lowercase, no trailing period
+- One line only, ≤ 100 characters total — no body, no footer, even for a multi-file change
+- One logical change per commit — never mix a refactor with a feature or a format-only sweep with a fix
+- Breaking change: `!` before the colon (e.g. `feat!: drop the v1 auth endpoint`)
+- NO Co-Authored-By, Claude-Session or any footer
 
 Examples:
-- `feat: add to-note v0.1.0`
-- `fix(setup-workspace): route design tokens through Tailwind utilities`
+- `feat(orders): add csv export to order list`
+- `fix(auth): correct token refresh race condition`
 - `docs: add commit message convention`
 
 
