@@ -93,6 +93,7 @@ To uninstall, delete the item's folder from `.claude/skills/` and `.agents/skill
 | [token-weather](mods/token-weather/scripts/weather.mjs) | status-line-hub (optional) | Status line module: token pressure as weather (☀ Clear → ⛈ Storm) from the context fill and each rate-limit window's pace. |
 | [session-info](mods/session-info/scripts/info.mjs) | status-line-hub (optional) | Status line module: model, effort, running time, lines changed and prompt cache state. |
 | [git-repo](mods/git-repo/scripts/repo.mjs) | status-line-hub (optional) | Status line module: repository, branch, pull request, CI runs (via `gh`), uncommitted line diff and ahead/behind its upstream. |
+| [subagent-control](mods/subagent-control/hooks/stances.ts) | — | Sets the model and effort of every subagent from one stance — Auto (Claude decides), Fast, Balanced, Deep or Max — shown in the band above the prompt. Press `ctrl+x a` from the prompt to cycle it; the installer binds that key unless you already use it. |
 
 ### Setting up the status line hub
 

@@ -1,0 +1,11 @@
+{
+  "name": "subagent-control",
+  "version": "0.1.0",
+  "description": "Sets the model and effort of every subagent from one stance (Auto, Fast, Balanced, Deep, Max), shown above the prompt and cycled with a chord.",
+  "types": "./types/index.d.ts",
+  "metadata": {
+    "agentKit": {
+      "keybindings": [{ "context": "Global", "key": "ctrl+x a", "action": "app:toggleDiffPreSession" }]
+    }
+  }
+}
