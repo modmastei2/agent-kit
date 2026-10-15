@@ -628,6 +628,7 @@ function runPicker(initialProject) {
   }
 
   function render() {
+    if (mode === "setup") return; // a setup has the terminal
     let lines;
     if (mode === "list") lines = renderList();
     else if (mode === "scope") lines = renderMenu(pendingTitle(), "Where?", scopeOptions(), "↑/↓ choose · enter next · esc back");
@@ -662,18 +663,26 @@ function runPicker(initialProject) {
     mode = "folders";
   }
 
-  // Hands the terminal to a child (a mod's setup), then takes it back.
-  function suspended(fn) {
+  // Hands the terminal to the mods' setups, one after another, then takes it
+  // back and passes their warnings to done. Waits a turn of the event loop
+  // first: on Windows, pausing stdin cancels its pending console read only once
+  // the loop runs again, and until then that read swallows the setup's keys.
+  function runSetups(items, done) {
+    mode = "setup";
     process.stdout.write("\x1b[?25h\x1b[?1049l");
     process.stdin.setRawMode(false);
     process.stdin.pause();
-    try {
-      return fn();
-    } finally {
-      process.stdin.setRawMode(true);
-      process.stdin.resume();
-      process.stdout.write("\x1b[?1049h\x1b[?25l");
-    }
+    setTimeout(() => {
+      let lines = [];
+      try {
+        lines = items.flatMap((item) => runSetup(item, chosenScope).map((line) => yellow(`${item.name}: ${line}`)));
+      } finally {
+        process.stdin.setRawMode(true);
+        process.stdin.resume();
+        process.stdout.write("\x1b[?1049h\x1b[?25l");
+        done(lines);
+      }
+    }, 0);
   }
 
   function install(layout) {
@@ -689,14 +698,19 @@ function runPicker(initialProject) {
         messages.push(yellow(`${item.name}: ${err.message.split("\n")[0]}`));
       }
     }
-    for (const item of installed.filter((i) => typeof installHints(i).setup === "string")) {
-      const lines = suspended(() => runSetup(item, chosenScope));
-      messages.push(...lines.map((line) => yellow(`${item.name}: ${line}`)));
-    }
-    messages.push(dim("Start a new Claude Code session to pick up the changes."));
-    selected.clear();
-    pending = [];
-    mode = "list";
+    const finish = () => {
+      messages.push(dim("Start a new Claude Code session to pick up the changes."));
+      selected.clear();
+      pending = [];
+      mode = "list";
+    };
+    const setups = installed.filter((i) => typeof installHints(i).setup === "string");
+    if (setups.length === 0) return finish();
+    runSetups(setups, (lines) => {
+      messages.push(...lines);
+      finish();
+      render();
+    });
   }
 
   function cleanup() {
