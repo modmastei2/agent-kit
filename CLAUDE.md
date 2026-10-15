@@ -3,14 +3,14 @@
 ## Commit policy
 
 Never commit automatically. Always wait for the user to explicitly ask for a commit,
-even after finishing edits, bumping a skill's version, or running `bin/skills.mjs add`.
+even after finishing edits, bumping a skill's or mod's version, or running `bin/agent-kit.mjs add`.
 
 ## Commit messages
 
 Use semantic commit messages: `<type>(<scope>): <description>`
 
 - `type`: `feat`, `fix`, `docs`, `chore`, `refactor`, `test`
-- `scope`: the skill folder name (e.g. `to-note`, `setup-workspace`), omit if repo-wide
+- `scope`: the skill or mod folder name (e.g. `to-note`, `setup-workspace`), omit if repo-wide
 - `description`: imperative, lowercase, no trailing period
 
 Examples:
@@ -19,12 +19,28 @@ Examples:
 - `docs: add commit message convention`
 
 
+## Repo Layout
+
+The repo holds two kinds of items, each in its own top-level folder:
+
+- `skills/<category>/<name>/` — Claude Code skills, grouped by category
+  (`engineering`, `productivity`, `creative`). Put a new skill in the category that
+  fits its purpose; add a new category folder only when none does.
+- `mods/<name>/` — Claude Code mods (plugins of function hooks: panes, status lines,
+  slash commands, tool-call hooks). Each needs `.claude-plugin/plugin.json` (with
+  `name`, `version`, `description`) and `hooks/hooks.json` pointing at its hooks module.
+
+Categories exist only in the repo: everything installs flat under `~/.claude/skills/<name>`,
+so a name must be unique across categories and across skills and mods. For the same
+reason, a skill that imports from another skill (e.g. `../code-review/...`) must sit in
+the same category as it, or the relative path breaks in the repo.
+
 ## Skill Structure
 
 New skills use this layout. Only `SKILL.md` is required; create the other folders only when the skill needs them.
 
 ```
-<skill-name>/
+skills/<category>/<skill-name>/
 ├── SKILL.md      # Required: instructions with YAML frontmatter (name, description, version)
 ├── scripts/      # Optional: executable code the skill runs
 ├── references/   # Optional: docs, schemas, policies, examples loaded on demand
@@ -73,10 +89,11 @@ Remove or generalize leaked assumptions. If specialization is necessary, ensure 
 - **Refactor when necessary**: Reorganize or rewrite existing content when incremental edits would reduce clarity or consistency.
 - **Review holistically**: After editing, review the entire skill for redundancy, contradictions, and unnecessary growth.
 
-## Skill Versioning
+## Versioning
 
-Every `SKILL.md` declares `version: <major>.<minor>.<patch>` in its frontmatter. Whenever
-a skill's files change, bump that version before committing — compare against the
+Every skill declares `version: <major>.<minor>.<patch>` in its `SKILL.md` frontmatter;
+every mod declares `"version"` in its `.claude-plugin/plugin.json`. Whenever a skill's
+or mod's files change, bump that version before committing — compare against the
 current value and pick the bump by scope:
 
 - **major**: breaking change — command/flag renamed or removed, behavior changed in a
@@ -85,18 +102,18 @@ current value and pick the bump by scope:
   workflow branch).
 - **patch**: fix, wording/doc tweak, internal refactor with no behavior change.
 
-Skip the bump only for changes that touch no skill (e.g. this file, `README.md`,
-`bin/skills.mjs`).
+Skip the bump only for changes that touch no skill or mod (e.g. this file, `README.md`,
+`bin/agent-kit.mjs`).
 
-## Skill Installation
+## Installation
 
-This repo is the source of truth for skills, but editing a file here does not make it live — Claude Code loads skills from `~/.claude/skills/<name>`, which is a symlink to `~/.agents/skills/<name>` (a plain global folder, not a git repo).
+This repo is the source of truth for skills and mods, but editing a file here does not make it live. Claude Code loads both from `~/.claude/skills/<name>` (a mod there auto-loads as `<name>@skills-dir`), which is a symlink to `~/.agents/skills/<name>` for a skill or `~/.agents/mods/<name>` for a mod (plain global folders, not git repos).
 
-When a skill changes, always follow this order:
+When a skill or mod changes, always follow this order:
 
-1. Edit the skill's files in this repo (`<skill-name>/`) and commit them — `add` only installs git-tracked files.
-2. Run `node bin/skills.mjs add <skill-name>` (or `npx . add <skill-name>`) from the repo root. It copies the skill's tracked files into `~/.agents/skills/<skill-name>/`, overwriting what's there, and creates the `~/.claude/skills/<skill-name>` symlink if it doesn't already exist.
+1. Edit its files in this repo (`skills/<category>/<name>/` or `mods/<name>/`) and commit them — `add` only installs git-tracked files.
+2. Run `node bin/agent-kit.mjs add skill <name>` or `node bin/agent-kit.mjs add mod <name>` (or `npx . add <kind> <name>`) from the repo root. It copies the tracked files into `~/.agents/<kind>s/<name>/`, overwriting what's there, and creates the `~/.claude/skills/<name>` symlink if it doesn't already exist.
 
-Run `node bin/skills.mjs list` to see which skills are installed.
+Run `node bin/agent-kit.mjs list` to see what's installed.
 
-Never edit `~/.agents/skills/<name>` or `~/.claude/skills/<name>` directly and treat that as done — those aren't tracked by git, so the change would be lost from version history and out of sync with the repo.
+Never edit `~/.agents/<kind>s/<name>` or `~/.claude/skills/<name>` directly and treat that as done — those aren't tracked by git, so the change would be lost from version history and out of sync with the repo.

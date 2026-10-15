@@ -1,6 +1,8 @@
 # Hidden folders (.claude, .agents, .agent-bridge, etc.) — local/agent tooling state,
 # never tracked. .git is unaffected since git ignores itself regardless.
 .*/
+# ...except a mod's plugin manifest folder, which must be tracked.
+!.claude-plugin/
 
 # Secrets and environment
 .env

@@ -4,10 +4,10 @@ Lifecycle Diagram turns "what statuses can this thing be in?" into one interacti
 entity that moves through statuses, such as orders, payments, tickets, subscriptions or deployments, and it
 maps every status, every way to move between them and every way it can end.
 
-[![Butterfly lifecycle built with this skill](examples/butterfly.png)](https://htmlpreview.github.io/?https://github.com/modmastei2/agent-kit/blob/master/lifecycle-diagram/examples/butterfly.html)
+[![Butterfly lifecycle built with this skill](examples/butterfly.png)](https://htmlpreview.github.io/?https://github.com/modmastei2/agent-kit/blob/master/skills/engineering/lifecycle-diagram/examples/butterfly.html)
 
 *Real output: the lifecycle of a butterfly, with the "Full metamorphosis" path highlighted.
-[Open the interactive page](https://htmlpreview.github.io/?https://github.com/modmastei2/agent-kit/blob/master/lifecycle-diagram/examples/butterfly.html).*
+[Open the interactive page](https://htmlpreview.github.io/?https://github.com/modmastei2/agent-kit/blob/master/skills/engineering/lifecycle-diagram/examples/butterfly.html).*
 
 Readers click a status to see what it means and what happens next, or pick an outcome to walk the path
 that leads there step by step. Every fact is tagged with how sure it is, so guesses never pass as truth.

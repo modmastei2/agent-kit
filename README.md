@@ -1,49 +1,54 @@
 # agent-kit
 
-Source of truth for Claude Code skills. Editing a file here does not make it
-live — Claude Code loads skills from `~/.claude/skills/<name>`, which is a
-symlink to `~/.agents/skills/<name>`.
+Skills and mods for [Claude Code](https://claude.com/claude-code). Install only the ones you want.
+
+- **Skills** teach Claude a task.
+- **Mods** change Claude Code itself, for example by adding a panel, a status line or a slash command.
 
 ## Install
 
-A small CLI (`bin/skills.mjs`, no dependencies, no npm publish needed) does
-the copy + symlink step for you, reading the file list straight from git so
-only committed files get installed:
+Requires Node.js 18+ and git.
 
 ```bash
-node bin/skills.mjs list            # show what's installed
-node bin/skills.mjs add <name>      # install/update one skill
+npx github:modmastei2/agent-kit list                    # see what's available
+npx github:modmastei2/agent-kit add skill code-review   # install a skill
+npx github:modmastei2/agent-kit add mod <mod-name>      # install a mod
 ```
 
-Or via `npx` without installing anything globally:
+Then start a new Claude Code session. Run `add` again to update.
+
+<details>
+<summary>From a clone instead</summary>
 
 ```bash
-npx . add <name>
+git clone https://github.com/modmastei2/agent-kit.git
+cd agent-kit
+node bin/agent-kit.mjs add skill code-review
 ```
 
-Skills are split below by how they get invoked:
+</details>
 
-- **User-invoked** — `disable-model-invocation: true` in the skill's
-  frontmatter, so Claude never triggers it on its own; you have to call it
-  explicitly (e.g. `/skill-name`).
-- **Model-invoked** — no such flag, so Claude can trigger it automatically
-  when the conversation matches the skill's `description`, in addition to
-  being callable explicitly.
+Each item is installed at `~/.claude/skills/<name>`. To uninstall, delete that folder and `~/.agents/skills/<name>` (or `~/.agents/mods/<name>`).
 
-## User-invoked
+## Before you use one
 
-| Skill | What it's for |
-| --- | --- |
-| [jira-tracker](jira-tracker/SKILL.md) | List, create, view, move, and pull Jira Cloud issues via the REST API. |
-| [setup-workspace](setup-workspace/SKILL.md) | Generate or update the `CLAUDE.md`/`AGENTS.md` system-prompt file documenting a repo's stack and conventions. |
+- **to-note** writes to a hard-coded Obsidian vault path. Change the path in its `SKILL.md` first.
 
-## Model-invoked
+## Skills
 
-| Skill | What it's for |
-| --- | --- |
-| [bridge](bridge/SKILL.md) | Hand work to another CLI agent (Claude Code, Codex, etc.) or check for a reply via the Agent Bridge mailbox. |
-| [code-review](code-review/SKILL.md) | Review a diff (working tree, staged, commit range, or PR) against repo standards and spec, provider-agnostic. |
-| [lifecycle-diagram](lifecycle-diagram/SKILL.md) | Build an interactive HTML page of an entity's status lifecycle — every status, where it can end, and the API/webhook payloads at each step — with a layout linter. |
-| [minecraft-structure-design](minecraft-structure-design/SKILL.md) | Design Minecraft structures as an architect — massing, silhouette, taste-aware style application, progressive LOD refinement — for any style or gameplay type. |
-| [review-pr](review-pr/SKILL.md) | Orchestrate an AI-assisted review of a PR/MR on GitHub, GitLab, or Bitbucket, using `code-review` for all findings. |
-| [to-note](to-note/SKILL.md) | Capture arbitrary input into the personal Obsidian vault, filed under Inbox/Projects/Knowledge/People. |
+*Invoked*: **user** means you call it with `/name`. **model** means Claude can also trigger it on its own.
+
+| Skill | Category | Invoked | Requires | What it's for |
+| --- | --- | --- | --- | --- |
+| [bridge](skills/engineering/bridge/SKILL.md) | Engineering | model | — | Hand work to another CLI agent (Claude Code, Codex, …) and check for replies. |
+| [code-review](skills/engineering/code-review/SKILL.md) | Engineering | model | — | Review a diff, commit range or PR against repo standards. |
+| [lifecycle-diagram](skills/engineering/lifecycle-diagram/SKILL.md) | Engineering | model | — | Build an interactive HTML page of an entity's status lifecycle. |
+| [review-pr](skills/engineering/review-pr/SKILL.md) | Engineering | model | [code-review](skills/engineering/code-review/SKILL.md) | Review a PR/MR on GitHub, GitLab or Bitbucket. |
+| [setup-workspace](skills/engineering/setup-workspace/SKILL.md) | Engineering | user | — | Generate a repo's `CLAUDE.md`/`AGENTS.md`. |
+| [jira-tracker](skills/productivity/jira-tracker/SKILL.md) | Productivity | user | — | List, create, move and pull Jira Cloud issues. |
+| [to-note](skills/productivity/to-note/SKILL.md) | Productivity | model | — | File notes into an Obsidian vault. |
+| [minecraft-structure-design](skills/creative/minecraft-structure-design/SKILL.md) | Creative | model | — | Design Minecraft structures, from concept to buildable spec. |
+
+## Mods
+
+None yet.
