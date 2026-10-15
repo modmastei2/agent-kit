@@ -1,11 +1,12 @@
 {
   "name": "status-line-hub",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Status line command that runs a list of module scripts and joins their colored output into one line.",
   "metadata": {
     "agentKit": {
-      "requires": ["token-weather"],
-      "statusLine": "node \"{dir}/scripts/hub.mjs\""
+      "requires": ["token-weather", "session-info", "git-repo"],
+      "statusLine": "node \"{dir}/scripts/hub.mjs\"",
+      "setup": "scripts/setup.mjs"
     }
   }
 }

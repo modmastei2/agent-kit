@@ -5,7 +5,20 @@
     {
       "name": "token-weather",
       "command": "node \"{mods}/token-weather/scripts/token-weather.mjs\"",
-      "enabled": true
+      "enabled": true,
+      "line": 1
+    },
+    {
+      "name": "session-info",
+      "command": "node \"{mods}/session-info/scripts/session-info.mjs\"",
+      "enabled": true,
+      "line": 2
+    },
+    {
+      "name": "git-repo",
+      "command": "node \"{mods}/git-repo/scripts/git-repo.mjs\"",
+      "enabled": true,
+      "line": 2
     }
   ]
 }

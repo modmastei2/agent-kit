@@ -91,14 +91,18 @@ To uninstall, delete the item's folder from `.claude/skills/` and `.agents/skill
 | --- | --- | --- |
 | [status-line-hub](mods/status-line-hub/config.json) | — | A `statusLine` command that runs a list of module scripts in parallel and joins their colored output into one line. |
 | [token-weather](mods/token-weather/scripts/weather.mjs) | status-line-hub (optional) | Status line module: token pressure as weather (☀ Clear → ⛈ Storm) from the context fill and each rate-limit window's pace. |
+| [session-info](mods/session-info/scripts/info.mjs) | status-line-hub (optional) | Status line module: model, effort, running time, lines changed and prompt cache state. |
+| [git-repo](mods/git-repo/scripts/repo.mjs) | status-line-hub (optional) | Status line module: repository, branch, pull request, CI runs (via `gh`), uncommitted line diff and ahead/behind its upstream. |
 
 ### Setting up the status line hub
 
-Install the hub and you get the same setup this repo uses: `token-weather` is installed beside it, and `statusLine` in your settings is pointed at it (`~/.claude/settings.json` for a global install, `.claude/settings.local.json` for a project):
+Install the hub and you get the same setup this repo uses: `token-weather`, `session-info` and `git-repo` are installed beside it, and `statusLine` in your settings is pointed at it (`~/.claude/settings.json` for a global install, `.claude/settings.local.json` for a project):
 
 ```bash
 npx github:modmastei2/agent-kit add mod status-line-hub
 ```
+
+Installed from a terminal, the hub then opens its layout editor: pick which modules show, their order and which line each goes on, with a live preview. Run it again any time with `node ~/.claude/skills/status-line-hub/scripts/setup.mjs`, or skip it at install with `--no-setup`.
 
 If your settings already have a `statusLine` of something else, it's kept and the installer says so. Add `--status-line` to replace it. Claude Code picks up the new status line on its next update, with no restart.
 
@@ -109,9 +113,11 @@ The hub runs the modules listed in `~/.claude/status-line-hub.json`, or in its b
   "timeoutMs": 2000,
   "separator": " │ ",
   "modules": [
-    { "name": "token-weather", "command": "node \"{mods}/token-weather/scripts/token-weather.mjs\"", "enabled": true }
+    { "name": "token-weather", "command": "node \"{mods}/token-weather/scripts/token-weather.mjs\"", "enabled": true, "line": 1 },
+    { "name": "session-info", "command": "node \"{mods}/session-info/scripts/session-info.mjs\" --segments model,effort,cache", "enabled": true, "line": 2 },
+    { "name": "git-repo", "command": "node \"{mods}/git-repo/scripts/git-repo.mjs\" --segments branch,pr,ci,sync", "enabled": true, "line": 2 }
   ]
 }
 ```
 
-A module is any command that reads the [status line JSON](https://code.claude.com/docs/en/statusline#available-data) on stdin and prints a line, ANSI colors included. One that fails or runs past `timeoutMs` is left out of the line.
+Modules with the same `line` share a row, in the order listed; a module without one goes on line 1. A module is any command that reads the [status line JSON](https://code.claude.com/docs/en/statusline#available-data) on stdin and prints a line, ANSI colors included. One that fails or runs past `timeoutMs` is left out of the line.
