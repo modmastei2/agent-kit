@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { readFileSync } from 'node:fs';
 import { ArgsError, parseArgs } from '../../code-review/scripts/lib/args.mjs';
-import { LANGS } from '../../code-review/scripts/lib/i18n.mjs';
+import { isLanguageTag, strings } from '../../code-review/scripts/lib/i18n.mjs';
 import { deriveVerdict } from '../../code-review/scripts/lib/verdict.mjs';
 import { StateError, decideMode, parseMarker } from './lib/state.mjs';
 import { ContradictionError, compareRounds } from './lib/compare.mjs';
@@ -55,15 +55,17 @@ function readPrevious(args) {
 
 function resolveLang(args, result) {
   const lang = args.lang ?? result?.reportLanguage ?? 'en';
-  if (!LANGS.includes(lang)) throw new ArgsError(`ภาษา "${lang}" ไม่รองรับ (${LANGS.join('/')})`);
+  if (!isLanguageTag(lang)) {
+    throw new ArgsError(`"${lang}" is not a language tag (expected e.g. en, th, ja, pt-BR)`);
+  }
 
   // The finding prose is already written in the result's language; only the
   // headings and status line follow --lang. Letting the two differ produces a
   // comment in two languages, so refuse instead of rendering it.
   if (args.lang && result?.reportLanguage && args.lang !== result.reportLanguage) {
     throw new ArgsError(
-      `--lang ${args.lang} ขัดกับ reportLanguage "${result.reportLanguage}" ในผลรีวิว — ` +
-        `finding เขียนเป็นภาษา ${result.reportLanguage} ไว้แล้ว ต้องให้ code-review รีวิวใหม่ถ้าจะเปลี่ยนภาษา`
+      `--lang ${args.lang} contradicts reportLanguage "${result.reportLanguage}" in the review result — ` +
+        `the findings are already written in ${result.reportLanguage}; re-run code-review to change language`
     );
   }
   return lang;
@@ -78,7 +80,7 @@ function runState(argv) {
   const decision = decideMode({
     previousSha: previous?.reviewedHeadSha ?? null,
     headSha: args.head,
-    lang: resolveLang(args, null),
+    t: strings(resolveLang(args, null)),
   });
 
   return JSON.stringify(
@@ -98,7 +100,7 @@ function runCompare(argv) {
   const args = parseArgs(argv, SPEC);
   const result = readJson(args.input, '--input');
   const previous = readPrevious(args);
-  const comparison = compareRounds(previous, result.findings ?? [], resolveLang(args, result));
+  const comparison = compareRounds(previous, result.findings ?? []);
   return JSON.stringify(comparison, null, 2);
 }
 
@@ -123,12 +125,12 @@ function runComment(argv) {
   const decision = decideMode({
     previousSha: previous?.reviewedHeadSha ?? null,
     headSha: args.head,
-    lang,
+    t: strings(lang, result.reportStrings),
   });
 
   const comparison =
     decision.mode === 'incremental'
-      ? compareRounds(previous, result.findings ?? [], lang)
+      ? compareRounds(previous, result.findings ?? [])
       : null;
 
   return renderComment(result, {

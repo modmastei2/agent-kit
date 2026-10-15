@@ -4,7 +4,7 @@ import { ArgsError, parseArgs } from './lib/args.mjs';
 import { ValidationError, validateDraft } from './lib/validate.mjs';
 import { deriveVerdict, renumber } from './lib/verdict.mjs';
 import { RenderError, renderReport } from './lib/render.mjs';
-import { LANGS } from './lib/i18n.mjs';
+import { isLanguageTag } from './lib/i18n.mjs';
 
 const SPEC = {
   input: { aliases: ['--input', '-i'], type: 'string', required: true },
@@ -18,19 +18,19 @@ function loadDraft(path) {
   try {
     raw = readFileSync(path, 'utf8');
   } catch {
-    throw new ArgsError(`อ่านไฟล์ไม่ได้: ${path}`);
+    throw new ArgsError(`Cannot read file: ${path}`);
   }
   try {
     return JSON.parse(raw);
   } catch (err) {
-    throw new ArgsError(`ไฟล์ ${path} ไม่ใช่ JSON ที่ถูกต้อง: ${err.message}`);
+    throw new ArgsError(`${path} is not valid JSON: ${err.message}`);
   }
 }
 
 function resolveLang(flagValue, draft) {
   const lang = flagValue ?? draft.reportLanguage ?? 'en';
-  if (!LANGS.includes(lang)) {
-    throw new ArgsError(`ภาษา "${lang}" ไม่รองรับ (${LANGS.join('/')})`);
+  if (!isLanguageTag(lang)) {
+    throw new ArgsError(`"${lang}" is not a language tag (expected e.g. en, th, ja, pt-BR)`);
   }
   return lang;
 }
@@ -57,7 +57,7 @@ function finalize(args) {
 function runValidate(argv) {
   const args = parseArgs(argv, SPEC);
   const result = finalize(args);
-  return `ผ่านการตรวจ — verdict: ${result.verdict} · findings: ${result.findings.length} · ภาษา: ${result.reportLanguage}`;
+  return `Valid — verdict: ${result.verdict} · findings: ${result.findings.length} · language: ${result.reportLanguage}`;
 }
 
 function runRender(argv) {

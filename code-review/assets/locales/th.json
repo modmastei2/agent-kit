@@ -1,0 +1,21 @@
+{
+  "commentStatus": {
+    "pass": "No blocking issues found — ยังต้องรอคนอนุมัติ",
+    "pass_with_warnings": "Approved with comments — ยังต้องรอคนอนุมัติ",
+    "changes_required": "Changes requested",
+    "unable_to_complete": "Review incomplete"
+  },
+  "updateSuffix": "(รอบที่ {version})",
+  "violates": "ขัดกับ",
+  "preExisting": "เป็นของเดิม ไม่ได้เกิดจากการแก้ครั้งนี้",
+  "reconsidered": "เปลี่ยนข้อสรุปจากรีวิวรอบก่อน",
+  "scopeLine": "{reviewed} จาก {changed} ไฟล์ที่เปลี่ยน",
+  "resolvedNote": "แก้แล้วตั้งแต่รีวิวรอบก่อน: {ids}",
+  "fullRerunNote": "รีวิวเต็มทั้ง PR แทนที่จะรีวิวเฉพาะ commit ใหม่ เพราะ{reason}",
+  "fullRerunReasons": {
+    "noPrevious": "ยังไม่เคยมีรีวิวบน PR นี้มาก่อน",
+    "unreachable": "commit ที่รีวิวรอบก่อน (`{sha}`) ไม่มีอยู่ใน history แล้ว ซึ่งเกิดจากการ force-push, rebase หรือ squash",
+    "same": "commit ล่าสุดยังเป็นตัวเดิมตั้งแต่รีวิวรอบก่อน"
+  },
+  "disclaimer": "รีวิวนี้สร้างโดย AI และควรได้รับการตรวจสอบโดยผู้รีวิวที่เป็นคน"
+}

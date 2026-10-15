@@ -1,8 +1,8 @@
 ---
 name: review-pr
-version: 0.1.0
+version: 0.2.0
 description: Orchestrate an AI-assisted review of a Pull Request or Merge Request on GitHub, GitLab, or Bitbucket Cloud. Use when the user asks to review a PR/MR by number, list open PRs awaiting review, re-review a PR after new commits, or post a review comment to a Git provider. All code findings come from the code-review skill.
-argument-hint: "[init | list | <id>] · [--base <branch>] · [--provider github|gitlab|bitbucket] · [--lang en|th] · [--review-updates] · [--post] · [--dry-run] · [--force (init)]"
+argument-hint: "[init | list | <id>] · [--base <branch>] · [--provider github|gitlab|bitbucket] · [--lang <tag>] · [--review-updates] · [--post] · [--dry-run] · [--force (init)]"
 ---
 
 # Review PR
@@ -211,17 +211,19 @@ worktree-local scratch path (or the session scratchpad) — not into the reposit
 ### Comment language
 
 The posted comment is written in the reviewer's language. Resolve it **before invoking
-`code-review`** and set `reportLanguage` (`"en"` or `"th"`) in the context file:
+`code-review`** and set `reportLanguage` (a language tag such as `en`, `th`, `ja`) in
+the context file:
 
 1. `--lang` argument, if given.
 2. `reportLanguage` in `.review-pr/config.local.json`, if set — the usual case for a
    team that always reviews in one language.
-3. Otherwise **ask the user once**, before the review starts: English or Thai. Never
-   ask again mid-run, and never ask after the review is already written.
+3. Otherwise the language the user is writing in. Ask only when that is unclear, once,
+   before the review starts — never mid-run, and never after the review is written.
 
-`code-review` owns what this does and does not translate — see its
-[Report language](../code-review/SKILL.md#report-language) section. The status line,
-section headings and disclaimer in the comment template follow the same language.
+`code-review` owns what this does and does not translate, including how a language
+without a bundled locale is supplied — see its
+[report language reference](../code-review/references/report-language.md). The comment's
+status line and disclaimer follow the same language.
 
 ## 7. Invoke code-review
 

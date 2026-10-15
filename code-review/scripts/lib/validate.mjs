@@ -1,10 +1,10 @@
-import { CAPS, LANGS } from './i18n.mjs';
+import { CAPS, isLanguageTag, missingStrings, writingStyle } from './i18n.mjs';
 import { deriveVerdict, severityRank, SEVERITIES, VERDICTS } from './verdict.mjs';
 
 export class ValidationError extends Error {
   constructor(problems) {
     super(
-      `ผลรีวิวไม่ผ่านการตรวจ ${problems.length} ข้อ:\n` +
+      `Review result failed validation (${problems.length} problem(s)):\n` +
         problems.map((p) => `  - ${p}`).join('\n')
     );
     this.name = 'ValidationError';
@@ -30,7 +30,7 @@ const CHECK_STATUSES = ['passed', 'failed', 'skipped', 'not_available'];
 const TARGET_TYPES = ['git_diff', 'commit_range', 'working_tree', 'staged', 'files', 'path'];
 
 /**
- * Count sentences in English prose.
+ * Count sentences in space-separated prose.
  *
  * Periods inside code spans (`.editorconfig`, `FileHelper.cs`) and inside
  * version numbers (6.0.302) are not sentence boundaries — without stripping
@@ -44,16 +44,17 @@ export function countSentences(text) {
   return boundaries ? boundaries.length : 1;
 }
 
-function checkProse(finding, field, lang, problems) {
+function checkProse(finding, field, problems) {
   const value = finding[field];
   if (value === undefined || value === null) return;
 
-  const caps = CAPS[lang];
+  const style = writingStyle(value);
+  const caps = CAPS[style];
   const charCap = caps.chars[field];
   if (charCap && value.length > charCap) {
     problems.push(
-      `${finding.id ?? '(no id)'} ${field}: ยาว ${value.length} ตัวอักษร เกินเพดาน ${charCap} ของภาษา ${lang} — ` +
-        `ตัดให้สั้นลง หรือย้ายรายละเอียดการตรวจสอบไปที่ evidence`
+      `${finding.id ?? '(no id)'} ${field}: ${value.length} characters, over the ${charCap} cap for ${style} text — ` +
+        `shorten it, or move the verification detail into evidence`
     );
   }
 
@@ -62,7 +63,7 @@ function checkProse(finding, field, lang, problems) {
     const count = countSentences(value);
     if (count > sentenceCap) {
       problems.push(
-        `${finding.id ?? '(no id)'} ${field}: ${count} ประโยค เกินเพดาน ${sentenceCap} ประโยค`
+        `${finding.id ?? '(no id)'} ${field}: ${count} sentences, over the cap of ${sentenceCap}`
       );
     }
   }
@@ -76,65 +77,65 @@ function validatePatch(finding, label, problems) {
   if (patch === undefined || patch === null) return;
 
   if (!Array.isArray(patch)) {
-    problems.push(`${label}: patch ต้องเป็น array`);
+    problems.push(`${label}: patch must be an array`);
     return;
   }
   if (patch.length > PATCH_MAX_HUNKS) {
     problems.push(
-      `${label}: patch มี ${patch.length} จุด เกิน ${PATCH_MAX_HUNKS} — ` +
-        `ถ้าต้องแก้หลายที่ขนาดนั้น ให้ยกตัวอย่าง 1-2 จุดที่เป็นตัวแทน แล้วอธิบายที่เหลือใน suggestion`
+      `${label}: patch has ${patch.length} entries, over the limit of ${PATCH_MAX_HUNKS} — ` +
+        `show one or two representative sites and describe the rest in suggestion`
     );
   }
 
   for (const [index, hunk] of patch.entries()) {
     const at = `${label} patch[${index}]`;
-    if (!hunk.file) problems.push(`${at}: ขาด file`);
-    if (!hunk.after) problems.push(`${at}: ขาด after (โค้ดที่ควรจะเป็น)`);
+    if (!hunk.file) problems.push(`${at}: missing file`);
+    if (!hunk.after) problems.push(`${at}: missing after (the corrected code)`);
 
     for (const field of ['before', 'after']) {
       const value = hunk[field];
       if (value != null && value.length > PATCH_CODE_CAP) {
         problems.push(
-          `${at} ${field}: ยาว ${value.length} ตัวอักษร เกิน ${PATCH_CODE_CAP} — ` +
-            `ยกมาเฉพาะบรรทัดที่เกี่ยวข้อง ไม่ต้องยกทั้ง method`
+          `${at} ${field}: ${value.length} characters, over the limit of ${PATCH_CODE_CAP} — ` +
+            `quote only the lines that change, not the whole method`
         );
       }
     }
 
     if (hunk.before != null && hunk.before === hunk.after) {
-      problems.push(`${at}: before กับ after เหมือนกัน — ไม่มีอะไรให้แก้`);
+      problems.push(`${at}: before and after are identical — nothing to change`);
     }
   }
 }
 
-function validateFinding(finding, index, lang, problems) {
+function validateFinding(finding, index, problems) {
   const label = finding.id ?? `findings[${index}]`;
 
   for (const field of ['id', 'severity', 'category', 'title', 'message', 'impact', 'suggestion']) {
-    if (!finding[field]) problems.push(`${label}: ขาดฟิลด์ ${field}`);
+    if (!finding[field]) problems.push(`${label}: missing field ${field}`);
   }
 
   if (finding.id && !/^CR-\d{3,}$/.test(finding.id)) {
-    problems.push(`${label}: id ต้องอยู่ในรูป CR-001`);
+    problems.push(`${label}: id must look like CR-001`);
   }
   if (finding.severity && !SEVERITIES.includes(finding.severity)) {
-    problems.push(`${label}: severity "${finding.severity}" ไม่ใช่ค่าที่อนุญาต (${SEVERITIES.join('/')})`);
+    problems.push(`${label}: severity "${finding.severity}" is not allowed (${SEVERITIES.join('/')})`);
   }
   if (finding.category && !CATEGORIES.includes(finding.category)) {
-    problems.push(`${label}: category "${finding.category}" ไม่ใช่ค่าที่อนุญาต`);
+    problems.push(`${label}: category "${finding.category}" is not allowed`);
   }
   if (finding.line != null && finding.file == null) {
-    problems.push(`${label}: ระบุ line แต่ไม่ได้ระบุ file`);
+    problems.push(`${label}: line is set but file is not`);
   }
   if (finding.endLine != null && finding.line != null && finding.endLine < finding.line) {
-    problems.push(`${label}: endLine น้อยกว่า line`);
+    problems.push(`${label}: endLine is before line`);
   }
 
   // Prose only. `patch` is intentionally absent from this list: it carries code,
   // and applying a prose budget to code would truncate exactly the part that
   // makes a finding actionable.
   for (const field of ['title', 'message', 'impact', 'suggestion', 'evidence']) {
-    checkProse(finding, field, lang, problems);
+    checkProse(finding, field, problems);
   }
 
   validatePatch(finding, label, problems);
@@ -143,8 +144,8 @@ function validateFinding(finding, index, lang, problems) {
   // reported, but it must never be the reason an author cannot merge.
   if (finding.preExisting && finding.severity === 'blocking') {
     problems.push(
-      `${label}: finding ที่เป็น preExisting ห้ามเป็น blocking — ` +
-        `คนเปิด PR แก้ของที่คนอื่น commit ไว้ก่อนไม่ได้`
+      `${label}: a preExisting finding cannot be blocking — ` +
+        `the author cannot fix what was committed before their change`
     );
   }
 }
@@ -157,57 +158,65 @@ function validateFinding(finding, index, lang, problems) {
 export function validateDraft(draft, lang) {
   const problems = [];
 
-  if (!LANGS.includes(lang)) {
-    throw new ValidationError([`ภาษา "${lang}" ไม่รองรับ (${LANGS.join('/')})`]);
+  if (!isLanguageTag(lang)) {
+    throw new ValidationError([`"${lang}" is not a language tag (expected e.g. en, th, ja, pt-BR)`]);
+  }
+
+  const missing = missingStrings(lang, draft.reportStrings);
+  if (missing.length) {
+    problems.push(
+      `no bundled locale for "${lang}" — add reportStrings translating these keys from ` +
+        `assets/locales/en.json: ${missing.join(', ')}`
+    );
   }
 
   for (const field of ['summary', 'reviewTarget', 'repositoryContext', 'checks', 'findings', 'limitations']) {
-    if (draft[field] === undefined) problems.push(`ขาดฟิลด์ระดับบนสุด: ${field}`);
+    if (draft[field] === undefined) problems.push(`missing top-level field: ${field}`);
   }
 
   if (draft.verdict && !VERDICTS.includes(draft.verdict)) {
-    problems.push(`verdict "${draft.verdict}" ไม่ใช่ค่าที่อนุญาต (${VERDICTS.join('/')})`);
+    problems.push(`verdict "${draft.verdict}" is not allowed (${VERDICTS.join('/')})`);
   }
 
   const target = draft.reviewTarget;
   if (target) {
     if (!TARGET_TYPES.includes(target.type)) {
-      problems.push(`reviewTarget.type "${target.type}" ไม่ใช่ค่าที่อนุญาต`);
+      problems.push(`reviewTarget.type "${target.type}" is not allowed`);
     }
     if (['git_diff', 'commit_range'].includes(target.type) && !(target.base && target.head)) {
-      problems.push(`reviewTarget type ${target.type} ต้องมีทั้ง base และ head`);
+      problems.push(`reviewTarget type ${target.type} needs both base and head`);
     }
     if (target.type === 'files' && !(target.files?.length > 0)) {
-      problems.push('reviewTarget type files ต้องมี files อย่างน้อย 1 รายการ');
+      problems.push('reviewTarget type files needs at least one entry in files');
     }
     if (target.type === 'path' && !target.path) {
-      problems.push('reviewTarget type path ต้องระบุ path');
+      problems.push('reviewTarget type path needs path');
     }
   }
 
   for (const [index, check] of (draft.checks ?? []).entries()) {
-    if (!check.name) problems.push(`checks[${index}]: ขาด name`);
+    if (!check.name) problems.push(`checks[${index}]: missing name`);
     if (!CHECK_STATUSES.includes(check.status)) {
-      problems.push(`checks[${index}]: status "${check.status}" ไม่ใช่ค่าที่อนุญาต (${CHECK_STATUSES.join('/')})`);
+      problems.push(`checks[${index}]: status "${check.status}" is not allowed (${CHECK_STATUSES.join('/')})`);
     }
     if ((check.status === 'skipped' || check.status === 'not_available') && !check.details) {
-      problems.push(`checks[${index}] (${check.name}): status ${check.status} ต้องบอกเหตุผลใน details`);
+      problems.push(`checks[${index}] (${check.name}): status ${check.status} needs the reason in details`);
     }
   }
 
   const findings = draft.findings ?? [];
   const seenIds = new Set();
   for (const [index, finding] of findings.entries()) {
-    validateFinding(finding, index, lang, problems);
+    validateFinding(finding, index, problems);
     if (finding.id) {
-      if (seenIds.has(finding.id)) problems.push(`id ซ้ำ: ${finding.id}`);
+      if (seenIds.has(finding.id)) problems.push(`duplicate id: ${finding.id}`);
       seenIds.add(finding.id);
     }
     if (index > 0) {
       const previous = findings[index - 1];
       if (severityRank(finding.severity) < severityRank(previous.severity)) {
         problems.push(
-          `findings เรียงผิดลำดับที่ ${finding.id ?? index}: ต้องเรียงจากรุนแรงมากไปน้อย`
+          `findings out of order at ${finding.id ?? index}: sort from most to least severe`
         );
       }
     }
@@ -216,20 +225,18 @@ export function validateDraft(draft, lang) {
   if (draft.scope) {
     const { reviewedFileCount: reviewed, changedFileCount: changed } = draft.scope;
     if (typeof reviewed !== 'number' || typeof changed !== 'number') {
-      problems.push('scope ต้องมี reviewedFileCount และ changedFileCount เป็นตัวเลข');
+      problems.push('scope needs numeric reviewedFileCount and changedFileCount');
     } else if (reviewed > changed) {
-      problems.push(`scope: reviewedFileCount (${reviewed}) มากกว่า changedFileCount (${changed})`);
+      problems.push(`scope: reviewedFileCount (${reviewed}) is greater than changedFileCount (${changed})`);
     }
   }
 
   const derived = deriveVerdict(draft);
   if (draft.verdict && draft.verdict !== derived) {
-    problems.push(
-      `verdict "${draft.verdict}" ขัดกับ findings ที่มีอยู่ — ค่าที่ถูกต้องคือ "${derived}"`
-    );
+    problems.push(`verdict "${draft.verdict}" contradicts the findings — it should be "${derived}"`);
   }
   if (derived === 'unable_to_complete' && !(draft.limitations?.length > 0)) {
-    problems.push('verdict unable_to_complete ต้องมี limitations อย่างน้อย 1 ข้อ');
+    problems.push('verdict unable_to_complete needs at least one limitation');
   }
 
   if (problems.length) throw new ValidationError(problems);

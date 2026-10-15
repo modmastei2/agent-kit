@@ -11,16 +11,16 @@ import { fingerprint } from './compare.mjs';
 
 // Findings are `####` headings, so the resolved/unresolved split folds into the
 // `###` line rather than nesting another level under it.
-function severityBlock(heading, findings, lang, split) {
+function severityBlock(heading, findings, lang, overrides, split) {
   if (!findings.length) return [];
 
   if (!split) {
     const out = [`### ${heading}`, ''];
-    findings.forEach((finding, index) => out.push(renderFinding(finding, index, lang), ''));
+    findings.forEach((finding, index) => out.push(renderFinding(finding, index, lang, overrides), ''));
     return out;
   }
 
-  const t = strings(lang);
+  const t = strings(lang, overrides);
   const out = [];
   const groups = [
     [t.sections.stillUnresolved, findings.filter((f) => f.__group === 'stillUnresolved')],
@@ -30,7 +30,7 @@ function severityBlock(heading, findings, lang, split) {
   for (const [label, group] of groups) {
     if (!group.length) continue;
     out.push(`### ${heading} · ${label}`, '');
-    group.forEach((finding, index) => out.push(renderFinding(finding, index, lang), ''));
+    group.forEach((finding, index) => out.push(renderFinding(finding, index, lang, overrides), ''));
   }
   return out;
 }
@@ -54,7 +54,8 @@ export function renderComment(result, options) {
     provider = 'github',
   } = options;
 
-  const t = strings(lang);
+  const overrides = result.reportStrings;
+  const t = strings(lang, overrides);
   const title =
     reviewVersion > 1 ? `${t.commentTitle} ${t.updateSuffix(reviewVersion)}` : t.commentTitle;
   const out = [`## ${title}`, ''];
@@ -63,7 +64,7 @@ export function renderComment(result, options) {
   out.push(`**${t.labels.reviewedCommit}:** \`${headSha}\`  `);
   if (previousSha) out.push(`**${t.labels.previouslyReviewed}:** \`${previousSha}\`  `);
   if (baseBranch) out.push(`**${t.labels.base}:** \`${baseBranch}\`  `);
-  const scopeLine = renderScopeLine(result.scope, lang);
+  const scopeLine = renderScopeLine(result.scope, lang, overrides);
   if (scopeLine) out.push(`**${t.labels.scope}:** ${scopeLine}  `);
   out.push('');
 
@@ -81,9 +82,9 @@ export function renderComment(result, options) {
 
   const groups = groupBySeverity(findings);
   const split = Boolean(comparison);
-  out.push(...severityBlock(t.sections.blocking, groups.blocking, lang, split));
-  out.push(...severityBlock(t.sections.warning, groups.warning, lang, split));
-  out.push(...severityBlock(t.sections.suggestion, groups.suggestion, lang, split));
+  out.push(...severityBlock(t.sections.blocking, groups.blocking, lang, overrides, split));
+  out.push(...severityBlock(t.sections.warning, groups.warning, lang, overrides, split));
+  out.push(...severityBlock(t.sections.suggestion, groups.suggestion, lang, overrides, split));
 
   const checks = result.checks ?? [];
   if (checks.length) {

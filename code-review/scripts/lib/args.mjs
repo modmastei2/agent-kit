@@ -6,7 +6,7 @@ export class ArgsError extends Error {
 }
 
 /**
- * Minimal flag parser, same shape as jira-tracker's.
+ * Minimal flag parser.
  * @param {string[]} argv - flag tokens (command name already stripped off)
  * @param {Record<string, {aliases: string[], type: 'boolean'|'string', required?: boolean}>} spec
  */
@@ -23,7 +23,7 @@ export function parseArgs(argv, spec) {
     const token = argv[i];
     const name = aliasMap[token];
     if (!name) {
-      throw new ArgsError(`ไม่รู้จัก flag: ${token}`);
+      throw new ArgsError(`Unknown flag: ${token}`);
     }
 
     const def = spec[name];
@@ -34,7 +34,7 @@ export function parseArgs(argv, spec) {
 
     const value = argv[i + 1];
     if (value === undefined) {
-      throw new ArgsError(`flag ${token} ต้องมีค่าตามหลัง`);
+      throw new ArgsError(`Flag ${token} needs a value`);
     }
     result[name] = value;
     i++;
@@ -42,7 +42,7 @@ export function parseArgs(argv, spec) {
 
   for (const [name, def] of Object.entries(spec)) {
     if (def.required && result[name] === undefined) {
-      throw new ArgsError(`ต้องระบุ ${def.aliases.join('/')}`);
+      throw new ArgsError(`Missing required flag ${def.aliases.join('/')}`);
     }
   }
 

@@ -88,9 +88,10 @@
       "description": "Draft/WIP status. Bitbucket Cloud has no draft concept; use false there."
     },
     "reportLanguage": {
-      "enum": ["en", "th"],
+      "type": "string",
+      "pattern": "^[A-Za-z]{2,3}(-[A-Za-z0-9]{1,8})*$",
       "default": "en",
-      "description": "Language for the prose of the review and the posted comment. Passed through to code-review. Enum values in the review result stay English regardless."
+      "description": "Language tag (e.g. en, th, ja) for the prose of the review and the posted comment. Passed through to code-review. Enum values in the review result stay English regardless."
     },
     "reviewMode": {
       "enum": ["full", "incremental"],

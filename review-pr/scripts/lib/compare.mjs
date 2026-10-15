@@ -1,23 +1,13 @@
 export class ContradictionError extends Error {
-  constructor(contradictions, lang) {
-    const header = {
-      en: `This review reverses ${contradictions.length} judgement(s) the previous review made deliberately.`,
-      th: `รีวิวรอบนี้กลับข้อสรุปที่รีวิวรอบก่อนตัดสินไว้แล้ว ${contradictions.length} ข้อ`,
-    }[lang];
+  constructor(contradictions) {
+    const header = `This review reverses ${contradictions.length} judgement(s) the previous review made deliberately.`;
 
     const detail = contradictions
-      .map((c) =>
-        {
-          const previous = { en: 'previously dismissed as', th: 'รอบก่อนตัดตกโดยให้เหตุผลว่า' }[lang];
-          return `  - ${c.id} "${c.title}" (${c.fp})\n    ${previous}: ${c.why}`;
-        }
-      )
+      .map((c) => `  - ${c.id} "${c.title}" (${c.fp})\n    previously dismissed as: ${c.why}`)
       .join('\n');
 
-    const fix = {
-      en: 'Either drop the finding, or set `previouslyDismissed` on it explaining what changed. Silently reversing an earlier conclusion is what makes a reviewer untrustworthy.',
-      th: 'ให้ตัด finding นั้นออก หรือใส่ฟิลด์ `previouslyDismissed` อธิบายว่าอะไรทำให้เปลี่ยนข้อสรุป — การกลับข้อสรุปเงียบ ๆ คือสิ่งที่ทำให้รีวิวเชื่อถือไม่ได้',
-    }[lang];
+    const fix =
+      'Either drop the finding, or set `previouslyDismissed` on it explaining what changed. Silently reversing an earlier conclusion is what makes a reviewer untrustworthy.';
 
     super(`${header}\n${detail}\n\n${fix}`);
     this.name = 'ContradictionError';
@@ -28,7 +18,7 @@ export class ContradictionError extends Error {
 function slug(text) {
   return String(text ?? '')
     .toLowerCase()
-    .replace(/[^a-z0-9฀-๿]+/g, '-')
+    .replace(/[^\p{L}\p{M}\p{N}]+/gu, '-')
     .replace(/^-|-$/g, '')
     .slice(0, 40);
 }
@@ -53,7 +43,7 @@ export function fingerprint(finding) {
  * Throws when the new review reports something the previous one explicitly
  * dismissed and offers no explanation for the reversal.
  */
-export function compareRounds(previous, findings, lang = 'en') {
+export function compareRounds(previous, findings) {
   const previousState = previous ?? { findings: [], dismissed: [] };
   const dismissedByFp = new Map(previousState.dismissed.map((d) => [d.fp, d.why]));
   const previousByFp = new Map(previousState.findings.map((f) => [f.fp, f]));
@@ -80,7 +70,7 @@ export function compareRounds(previous, findings, lang = 'en') {
     else newlyIntroduced.push({ ...finding, fp });
   }
 
-  if (contradictions.length) throw new ContradictionError(contradictions, lang);
+  if (contradictions.length) throw new ContradictionError(contradictions);
 
   const resolved = previousState.findings.filter((f) => !seen.has(f.fp));
 

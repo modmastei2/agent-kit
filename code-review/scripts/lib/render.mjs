@@ -55,10 +55,10 @@ export function assertNoHtml(markdown, where = 'output') {
   if (!found) return markdown;
 
   throw new RenderError(
-    `${where}: พบ HTML ในผลลัพธ์ — ${JSON.stringify(found[0])}\n` +
-      `  Bitbucket ไม่ render HTML ผู้อ่านจะเห็นแท็กเป็นข้อความดิบ\n` +
-      `  ถ้ามาจาก renderer ให้เปลี่ยนไปใช้ markdown แทน\n` +
-      `  ถ้ามาจากเนื้อ finding ให้ครอบด้วย backtick (GitHub จะกลืนข้อความนั้นหายไปเช่นกัน)`
+    `${where}: raw HTML in the output — ${JSON.stringify(found[0])}\n` +
+      `  Bitbucket renders no HTML, so the reader would see the tag as literal text.\n` +
+      `  If the renderer produced it, switch to Markdown.\n` +
+      `  If it came from finding prose, wrap it in backticks (GitHub would swallow it too).`
   );
 }
 
@@ -101,8 +101,8 @@ function prefixLines(code, marker) {
  * paragraph as separate sentences — never merged into a block of prose, and
  * never reordered so the method comes first.
  */
-export function renderFinding(finding, index, lang) {
-  const t = strings(lang);
+export function renderFinding(finding, index, lang, overrides) {
+  const t = strings(lang, overrides);
   const lines = [];
 
   // A heading, not a numbered list item. Everything a finding contains must sit
@@ -149,34 +149,35 @@ export function renderFinding(finding, index, lang) {
   return lines.join('\n');
 }
 
-function renderSection(heading, findings, lang) {
+function renderSection(heading, findings, lang, overrides) {
   if (!findings.length) return [];
-  const blocks = findings.map((finding, index) => renderFinding(finding, index, lang));
+  const blocks = findings.map((finding, index) => renderFinding(finding, index, lang, overrides));
   return [`### ${heading}`, '', ...blocks.flatMap((block) => [block, ''])];
 }
 
-export function renderScopeLine(scope, lang) {
+export function renderScopeLine(scope, lang, overrides) {
   if (!scope) return null;
-  const t = strings(lang);
+  const t = strings(lang, overrides);
   return t.scopeLine(scope.reviewedFileCount, scope.changedFileCount, scope.exclusions ?? []);
 }
 
 /** The standalone Markdown report returned by `code-review` itself. */
 export function renderReport(result, lang) {
-  const t = strings(lang);
+  const overrides = result.reportStrings;
+  const t = strings(lang, overrides);
   const out = [`## ${t.reportTitle}`, ''];
 
   out.push(`**${t.labels.verdict}:** ${t.verdicts[result.verdict]}  `);
   const range = targetRange(result.reviewTarget);
   if (range) out.push(`**${t.labels.range}:** \`${range}\`  `);
-  const scopeLine = renderScopeLine(result.scope, lang);
+  const scopeLine = renderScopeLine(result.scope, lang, overrides);
   if (scopeLine) out.push(`**${t.labels.scope}:** ${scopeLine}  `);
   out.push('');
 
   const groups = groupBySeverity(result.findings ?? []);
-  out.push(...renderSection(t.sections.blocking, groups.blocking, lang));
-  out.push(...renderSection(t.sections.warning, groups.warning, lang));
-  out.push(...renderSection(t.sections.suggestion, groups.suggestion, lang));
+  out.push(...renderSection(t.sections.blocking, groups.blocking, lang, overrides));
+  out.push(...renderSection(t.sections.warning, groups.warning, lang, overrides));
+  out.push(...renderSection(t.sections.suggestion, groups.suggestion, lang, overrides));
 
   const checks = result.checks ?? [];
   if (checks.length) {

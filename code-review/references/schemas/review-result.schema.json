@@ -17,9 +17,14 @@
   ],
   "properties": {
     "reportLanguage": {
-      "enum": ["en", "th"],
+      "type": "string",
+      "pattern": "^[A-Za-z]{2,3}(-[A-Za-z0-9]{1,8})*$",
       "default": "en",
-      "description": "Language for prose fields and the Markdown report. Enum values elsewhere in this schema always stay English regardless of this setting."
+      "description": "Language tag (e.g. en, th, ja, pt-BR) for prose fields and the Markdown report. Enum values elsewhere in this schema always stay English regardless of this setting."
+    },
+    "reportStrings": {
+      "type": "object",
+      "description": "Translations of the renderer's own sentences, keyed exactly like assets/locales/en.json. Required, with every key, when reportLanguage has no bundled locale; optional otherwise, where it overrides individual keys."
     },
     "scope": {
       "type": "object",

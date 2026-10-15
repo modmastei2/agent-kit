@@ -1,4 +1,5 @@
 import { execFileSync } from 'node:child_process';
+import { strings } from '../../../code-review/scripts/lib/i18n.mjs';
 
 export class StateError extends Error {
   constructor(message) {
@@ -136,23 +137,9 @@ function shaReachable(sha, cwd) {
  * indistinguishable from a bug, so the reason travels with the decision rather
  * than being left to the caller to remember.
  */
-export function decideMode({ previousSha, headSha, cwd = process.cwd(), lang = 'en' }) {
-  const reasons = {
-    en: {
-      noPrevious: 'no previous review comment was found on this PR',
-      unreachable: (sha) =>
-        `the previously reviewed commit \`${sha}\` is no longer reachable, which happens after a force-push, rebase or squash`,
-      same: 'the head commit is unchanged since the previous review',
-    },
-    th: {
-      noPrevious: 'ยังไม่เคยมีรีวิวบน PR นี้มาก่อน',
-      unreachable: (sha) =>
-        `commit ที่รีวิวรอบก่อน (\`${sha}\`) ไม่มีอยู่ใน history แล้ว ซึ่งเกิดจากการ force-push, rebase หรือ squash`,
-      same: 'commit ล่าสุดยังเป็นตัวเดิมตั้งแต่รีวิวรอบก่อน',
-    },
-  }[lang];
+export function decideMode({ previousSha, headSha, cwd = process.cwd(), t = strings('en') }) {
+  const reasons = t.fullRerunReasons;
 
-  if (!reasons) throw new StateError(`ไม่รองรับภาษา: ${lang}`);
   if (!previousSha) return { mode: 'full', reason: reasons.noPrevious, previousSha: null };
 
   if (!shaReachable(previousSha, cwd)) {
