@@ -1,0 +1,5 @@
+{
+  "name": "session-info",
+  "version": "0.1.0",
+  "description": "Status line module that shows the session's model, effort, running time, lines changed and prompt cache state."
+}

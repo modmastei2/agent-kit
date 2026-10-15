@@ -1,0 +1,5 @@
+{
+  "name": "git-repo",
+  "version": "0.1.0",
+  "description": "Status line module that shows the repository, branch, pull request, CI runs, uncommitted line diff and how far the branch is from its remote."
+}
