@@ -1,7 +1,7 @@
 import { atom, read, update } from 'claude-code'
 import type { EngineInterface, Register } from 'claude-code'
 
-import { chordFor, nextStanceId, stanceOf } from './stances'
+import { chordFor, describeStance, formatChord, nextStanceId, stanceOf } from './stances'
 
 // A Global keybinding action Claude Code itself leaves unhandled (it reaches
 // only the old diff panel), so a chord bound to it presses the band's button
@@ -76,20 +76,13 @@ export const register: Register = on => {
     const ours = (
       <Box flexDirection="row" columnGap={2}>
         <Button key="cycle" plain action={CYCLE_ACTION} onPress={() => cycle($)}>
-          <Text color={COLORS.label}>subagents </Text>
+          <Text color={COLORS.label}>Subagents: </Text>
           <Text color={COLORS.headline} bold>
             {current.label}
           </Text>
-          {current.model === undefined ? (
-            <Text color={COLORS.label}> · Claude decides</Text>
-          ) : (
-            <Text>
-              {' '}
-              · {current.model} · {current.effort}
-            </Text>
-          )}
+          <Text color={COLORS.label}>  {describeStance(current)}</Text>
         </Button>
-        {hint !== '' ? <Text color={COLORS.label}>{hint} to cycle</Text> : null}
+        {hint !== '' ? <Text color={COLORS.label}>{formatChord(hint)} to change</Text> : null}
       </Box>
     )
 

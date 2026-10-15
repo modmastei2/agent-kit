@@ -1,6 +1,6 @@
 {
   "name": "subagent-control",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Sets the model and effort of every subagent from one stance (Auto, Fast, Balanced, Deep, Max), shown above the prompt and cycled with a chord.",
   "types": "./types/index.d.ts",
   "metadata": {

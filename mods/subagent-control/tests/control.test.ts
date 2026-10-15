@@ -1,7 +1,7 @@
 import { describe, expect, mock, test } from 'claude-code/testing'
 import type { AgentSpawnInput, On } from 'claude-code'
 
-import { chordFor, nextStanceId, stanceOf } from '../hooks/stances'
+import { chordFor, describeStance, formatChord, nextStanceId, stanceOf } from '../hooks/stances'
 
 const START = { cwd: '/work', surface: 'terminal', isInteractive: true } as const
 
@@ -59,6 +59,12 @@ describe('stances', () => {
     const keybindings = { bindings: [{ context: 'Global', bindings: { 'ctrl+x a': 'app:toggleDiffPreSession' } }] }
     expect(chordFor(keybindings, 'app:toggleDiffPreSession')).toBe('ctrl+x a')
     expect(chordFor({}, 'app:toggleDiffPreSession')).toBeUndefined()
+  })
+
+  test('spell their settings and chord for the band', () => {
+    expect(describeStance(stanceOf('deep'))).toBe('Opus · High effort')
+    expect(describeStance(stanceOf('auto'))).toBe('Model and effort set per agent')
+    expect(formatChord('ctrl+x a')).toBe('Ctrl+X A')
   })
 })
 
