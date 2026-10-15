@@ -19,6 +19,23 @@ Examples:
 - `docs: add commit message convention`
 
 
+## Skill Structure
+
+New skills use this layout. Only `SKILL.md` is required; create the other folders only when the skill needs them.
+
+```
+<skill-name>/
+├── SKILL.md      # Required: instructions with YAML frontmatter (name, description, version)
+├── scripts/      # Optional: executable code the skill runs
+├── references/   # Optional: docs, schemas, policies, examples loaded on demand
+└── assets/       # Optional: templates, fonts, icons, or other files used in output
+```
+
+- Keep `SKILL.md` lean; move detail into `references/` and point to it from `SKILL.md`.
+- No other top-level folders. Fit content into one of the three: example files and
+  schemas go in `references/`, output templates go in `assets/`.
+- Existing skills with other layouts stay as they are unless a restructure is explicitly requested.
+
 ## Skill Design & Context Isolation
 
 Skills must be reusable, capability-oriented, and domain-agnostic by default. The context in which a skill is created must not become a permanent requirement of that skill.
