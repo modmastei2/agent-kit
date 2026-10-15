@@ -19,17 +19,20 @@
 //   statusLine  the statusLine command to set, {dir} being the folder Claude
 //               Code loads the mod from; an existing statusLine of something
 //               else is kept unless --status-line is given
+//   setup       a script, relative to the mod's folder, run with node after an
+//               install from a terminal so the person can configure it there;
+//               skipped without a terminal or with --no-setup
 //
 // Usage:
 //   agent-kit [--project [path]]           interactive picker (TTY only)
 //   agent-kit list [--project [path]]
-//   agent-kit add <skill|mod> <name> [--project [path]] [--to both|claude|agents] [--copy] [--status-line]
+//   agent-kit add <skill|mod> <name> [--project [path]] [--to both|claude|agents] [--copy] [--status-line] [--no-setup]
 // --project without a path means the current directory. --to defaults to
 // both (linked) for global and claude for a project; --copy makes "both" two
 // copies instead of a link. Run as `node bin/agent-kit.mjs ...` from a clone,
 // or `npx github:<owner>/agent-kit ...`.
 
-import { execFileSync } from "node:child_process";
+import { execFileSync, spawnSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -366,6 +369,20 @@ function installItem(item, scope, layout, options = {}) {
   return log;
 }
 
+const hasTerminal = () => Boolean(process.stdin.isTTY && process.stdout.isTTY);
+
+// Runs an installed item's setup script in the foreground, sharing the
+// terminal. Returns log lines.
+function runSetup(item, scope) {
+  const { setup } = installHints(item);
+  if (typeof setup !== "string") return [];
+  const loc = locations(item, scope);
+  const dir = [loc.claude, loc.agents].find((d) => fs.existsSync(path.join(d, setup)));
+  if (!dir) return [`Warning: ${item.name}'s setup script ${setup} was not installed.`];
+  const result = spawnSync(process.execPath, [path.join(dir, setup)], { stdio: "inherit" });
+  return result.status === 0 ? [] : [`Warning: ${item.name}'s setup did not finish; run it later with:\n  node "${path.join(dir, setup)}"`];
+}
+
 // ---------------------------------------------------------------------------
 // Non-interactive commands
 
@@ -403,6 +420,7 @@ function cmdAdd(kind, name, scope, layout, options) {
   }
   try {
     for (const line of installItem(item, scope, layout, options)) console.log(line);
+    if (options.setup && hasTerminal()) for (const line of runSetup(item, scope)) console.log(line);
   } catch (err) {
     console.error(err.message);
     process.exit(1);
@@ -599,16 +617,36 @@ function runPicker(initialProject) {
     mode = "folders";
   }
 
+  // Hands the terminal to a child (a mod's setup), then takes it back.
+  function suspended(fn) {
+    process.stdout.write("\x1b[?25h\x1b[?1049l");
+    process.stdin.setRawMode(false);
+    process.stdin.pause();
+    try {
+      return fn();
+    } finally {
+      process.stdin.setRawMode(true);
+      process.stdin.resume();
+      process.stdout.write("\x1b[?1049h\x1b[?25l");
+    }
+  }
+
   function install(layout) {
     messages = [];
+    const installed = [];
     for (const item of pending) {
       try {
         const warnings = installItem(item, chosenScope, layout).filter((line) => line.startsWith("Warning:"));
         if (warnings.length) messages.push(...warnings.map((w) => yellow(`${item.name}: ${w}`)));
         else messages.push(green(`installed ${item.name}@${item.version} (${chosenScope.label}, ${LAYOUTS[layout].label})`));
+        installed.push(item);
       } catch (err) {
         messages.push(yellow(`${item.name}: ${err.message.split("\n")[0]}`));
       }
+    }
+    for (const item of installed.filter((i) => typeof installHints(i).setup === "string")) {
+      const lines = suspended(() => runSetup(item, chosenScope));
+      messages.push(...lines.map((line) => yellow(`${item.name}: ${line}`)));
     }
     messages.push(dim("Start a new Claude Code session to pick up the changes."));
     selected.clear();
@@ -771,13 +809,14 @@ function runPicker(initialProject) {
 
 // ---------------------------------------------------------------------------
 
-// Pulls --project [path], --to <where>, --copy and --status-line out of argv.
+// Pulls --project [path], --to <where>, --copy, --status-line and --no-setup out of argv.
 function parseArgs(argv) {
   const positionals = [];
   let project = null;
   let to = null;
   let copy = false;
   let replaceStatusLine = false;
+  let setup = true;
   for (let i = 0; i < argv.length; i++) {
     if (argv[i] === "--project") {
       const next = argv[i + 1];
@@ -788,11 +827,13 @@ function parseArgs(argv) {
       copy = true;
     } else if (argv[i] === "--status-line") {
       replaceStatusLine = true;
+    } else if (argv[i] === "--no-setup") {
+      setup = false;
     } else {
       positionals.push(argv[i]);
     }
   }
-  return { positionals, project, to, copy, replaceStatusLine };
+  return { positionals, project, to, copy, replaceStatusLine, setup };
 }
 
 function usage() {
@@ -801,7 +842,7 @@ function usage() {
       "Usage:",
       "  agent-kit [--project [path]]                     interactive picker",
       "  agent-kit list [--project [path]]",
-      "  agent-kit add <skill|mod> <name> [--project [path]] [--to both|claude|agents] [--copy] [--status-line]",
+      "  agent-kit add <skill|mod> <name> [--project [path]] [--to both|claude|agents] [--copy] [--status-line] [--no-setup]",
       "",
       "--project    work on <path> (default: current directory) instead of your home folder",
       "--to         both: .agents and .claude (default for global)",
@@ -809,11 +850,12 @@ function usage() {
       "             agents: .agents only",
       "--copy       with --to both, make two copies instead of linking .claude to .agents",
       "--status-line  replace an existing statusLine with the one a mod sets (kept by default)",
+      "--no-setup   skip a mod's setup step after installing (it runs only in a terminal anyway)",
     ].join("\n"),
   );
 }
 
-const { positionals, project, to, copy, replaceStatusLine } = parseArgs(process.argv.slice(2));
+const { positionals, project, to, copy, replaceStatusLine, setup } = parseArgs(process.argv.slice(2));
 const [cmd, kind, name] = positionals;
 
 if (project && !fs.existsSync(project)) {
@@ -836,7 +878,7 @@ if (!cmd) {
   const scope = scopes[scopes.length - 1];
   const where = to ?? (defaultLayout(scope) === "link" ? "both" : "claude");
   const layout = where === "both" ? (copy ? "copies" : "link") : where;
-  cmdAdd(kind, name, scope, layout, { replaceStatusLine });
+  cmdAdd(kind, name, scope, layout, { replaceStatusLine, setup });
 } else {
   usage();
   process.exit(1);

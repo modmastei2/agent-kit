@@ -35,8 +35,10 @@ The repo holds two kinds of items, each in its own top-level folder:
   modules). Each needs `.claude-plugin/plugin.json` (with `name`, `version`,
   `description`), plus `hooks/hooks.json` pointing at its hooks module when it hooks
   anything. Install hints for `bin/agent-kit.mjs` go under `metadata.agentKit` in
-  `plugin.json`: `requires` (items installed alongside it) and `statusLine` (the
-  command to set, `{dir}` being the folder Claude Code loads the mod from).
+  `plugin.json`: `requires` (items installed alongside it), `statusLine` (the
+  command to set, `{dir}` being the folder Claude Code loads the mod from) and
+  `setup` (a script, relative to the mod's folder, run after an install from a
+  terminal).
 
 Categories exist only in the repo: everything installs flat under `~/.claude/skills/<name>`,
 so a name must be unique across categories and across skills and mods. For the same
@@ -122,6 +124,6 @@ When a skill or mod changes, always follow this order:
 1. Edit its files in this repo (`skills/<category>/<name>/` or `mods/<name>/`) and commit them — `add` only installs git-tracked files.
 2. Run `node bin/agent-kit.mjs add skill <name>` or `node bin/agent-kit.mjs add mod <name>` (or `npx . add <kind> <name>`) from the repo root. It copies the tracked files into `~/.agents/<kind>s/<name>/`, overwriting what's there, and creates the `~/.claude/skills/<name>` symlink if it doesn't already exist.
 
-Run `node bin/agent-kit.mjs list` to see each item's install status (not installed / installed / update). Both `list` and `add` take `--project [path]` to work on a project instead of the home folder, and `add` takes `--to both|claude|agents` and `--copy` to choose the folders (default: both, linked, for global; `.claude` only for a project), and `--status-line` to let a mod replace an existing `statusLine`. The steps above are the default global flow this repo's own skills use. Running it with no arguments opens an interactive picker meant for a human — agents use `list` and `add` instead.
+Run `node bin/agent-kit.mjs list` to see each item's install status (not installed / installed / update). Both `list` and `add` take `--project [path]` to work on a project instead of the home folder, and `add` takes `--to both|claude|agents` and `--copy` to choose the folders (default: both, linked, for global; `.claude` only for a project), `--status-line` to let a mod replace an existing `statusLine`, and `--no-setup` to skip a mod's setup script. The steps above are the default global flow this repo's own skills use. Running it with no arguments opens an interactive picker meant for a human — agents use `list` and `add` instead.
 
 Never edit `~/.agents/<kind>s/<name>` or `~/.claude/skills/<name>` directly and treat that as done — those aren't tracked by git, so the change would be lost from version history and out of sync with the repo.
