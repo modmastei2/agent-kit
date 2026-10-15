@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/modmastei2/skills/bridge/schema/message.schema.json",
+  "$id": "https://github.com/modmastei2/agent-kit/bridge/schema/message.schema.json",
   "title": "Agent Bridge mailbox message",
   "description": "One JSON file under <project>/.agent-bridge/mailbox/{unclaimed,claimed,done}/<id>.json. Authoritative shape — bridge.js validates every message it writes against this before touching disk.",
   "type": "object",

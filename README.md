@@ -1,4 +1,4 @@
-# Skills
+# agent-kit
 
 Source of truth for Claude Code skills. Editing a file here does not make it
 live — Claude Code loads skills from `~/.claude/skills/<name>`, which is a

@@ -1,6 +1,6 @@
 ---
 name: bridge
-version: 0.1.1
+version: 0.1.2
 description: Send work to another agent (any CLI agent participating in this project's mailbox — Claude Code, Codex, or others) or check for a reply, via the Agent Bridge mailbox, so agents can hand tasks to each other without a human relaying prompts. Trigger on "/bridge" or "$bridge", or when the user asks to have another agent implement, review, or fix something.
 ---
 
