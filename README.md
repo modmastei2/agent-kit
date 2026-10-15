@@ -87,4 +87,31 @@ To uninstall, delete the item's folder from `.claude/skills/` and `.agents/skill
 
 ## Mods
 
-None yet.
+| Mod | Works with | What it does |
+| --- | --- | --- |
+| [status-line-hub](mods/status-line-hub/config.json) | — | A `statusLine` command that runs a list of module scripts in parallel and joins their colored output into one line. |
+| [token-weather](mods/token-weather/scripts/weather.mjs) | status-line-hub (optional) | Status line module: token pressure as weather (☀ Clear → ⛈ Storm) from the context fill and each rate-limit window's pace. |
+
+### Setting up the status line hub
+
+Install the hub and you get the same setup this repo uses: `token-weather` is installed beside it, and `statusLine` in your settings is pointed at it (`~/.claude/settings.json` for a global install, `.claude/settings.local.json` for a project):
+
+```bash
+npx github:modmastei2/agent-kit add mod status-line-hub
+```
+
+If your settings already have a `statusLine` of something else, it's kept and the installer says so. Add `--status-line` to replace it. Claude Code picks up the new status line on its next update, with no restart.
+
+The hub runs the modules listed in `~/.claude/status-line-hub.json`, or in its bundled [`config.json`](mods/status-line-hub/config.json) when that file doesn't exist. `{mods}` in a command is the folder the hub is installed in, so modules installed beside it are found:
+
+```json
+{
+  "timeoutMs": 2000,
+  "separator": " │ ",
+  "modules": [
+    { "name": "token-weather", "command": "node \"{mods}/token-weather/scripts/token-weather.mjs\"", "enabled": true }
+  ]
+}
+```
+
+A module is any command that reads the [status line JSON](https://code.claude.com/docs/en/statusline#available-data) on stdin and prints a line, ANSI colors included. One that fails or runs past `timeoutMs` is left out of the line.

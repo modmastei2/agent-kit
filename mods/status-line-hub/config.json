@@ -1,0 +1,11 @@
+{
+  "timeoutMs": 2000,
+  "separator": " │ ",
+  "modules": [
+    {
+      "name": "token-weather",
+      "command": "node \"{mods}/token-weather/scripts/token-weather.mjs\"",
+      "enabled": true
+    }
+  ]
+}

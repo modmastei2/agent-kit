@@ -1,0 +1,5 @@
+{
+  "name": "token-weather",
+  "version": "0.1.0",
+  "description": "Status line module that shows token pressure as weather: the context window's fill and a forecast of when each rate-limit window runs out."
+}
