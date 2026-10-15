@@ -1,11 +1,25 @@
 # Agent Bridge
 
-Lets CLI agents (Claude Code, Codex, or any other agent running this skill) hand work to each other via `/bridge`, without a human relaying prompts between chat windows. No server or daemon — just a mailbox of plain JSON files plus this skill on each side. Agent identities are free-form names, not a fixed pair.
+Agent Bridge lets AI coding agents such as Claude Code and Codex hand work to each other directly, so nobody
+has to copy prompts between chat windows. One agent sends a task ("implement this", "review this change",
+"fix this bug"), another picks it up, does the work, and reports back with what it changed.
 
-- **`SKILL.md`** — the operating instructions an agent follows when `/bridge` runs.
-- **`scripts/bridge.js`** — the CLI backing it (`send`, `check`, `claim`, `reply`, `complete`, `wait`). Plain Node.js, zero dependencies.
-- **`schema/message.schema.json`** — the mailbox message format. `bridge.js` validates every message it writes against it.
+```mermaid
+sequenceDiagram
+    participant You
+    participant A as Agent A (e.g. Claude Code)
+    participant M as Project inbox
+    participant B as Agent B (e.g. Codex)
+    You->>A: "Have Codex review this change"
+    A->>M: Send task
+    B->>M: /bridge: check inbox, pick up task
+    Note over B: Does the work
+    B->>M: Reply with what changed, mark done
+    A->>M: Check for reply
+    A->>You: Summarize result
+```
 
-Mailbox lives at `<project>/.agent-bridge/mailbox/{unclaimed,claimed,done}/<id>.json`, scoped per project.
-
-Full design rationale: `docs/agent-bridge-spec.md` in the [agent-hub](../../agent-hub) repo.
+Every task is tracked from sent to in progress to done, so it's always clear what is waiting and what is
+finished. Any number of agents can join, each under its own name, and each project keeps its own inbox.
+There is no server or extra setup: messages are plain files inside the project, and each agent only needs
+this skill installed.
