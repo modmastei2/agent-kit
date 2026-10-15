@@ -22,6 +22,8 @@
 //   setup       a script, relative to the mod's folder, run with node after an
 //               install from a terminal so the person can configure it there;
 //               skipped without a terminal or with --no-setup
+//   keybindings [{ context, key, action }] added to ~/.claude/keybindings.json;
+//               a key already bound, or an action already given a key, is kept
 //
 // Usage:
 //   agent-kit [--project [path]]           interactive picker (TTY only)
@@ -305,6 +307,46 @@ function setStatusLine(item, scope, command, replace) {
   return [`Set statusLine in ${file}`];
 }
 
+// Adds the item's keybindings to the person's keybindings.json, which Claude
+// Code reads from the home folder alone, whatever the install's scope. Never
+// takes a key the person already uses, nor rebinds an action they bound.
+function addKeybindings(item, bindings) {
+  const file = path.join(os.homedir(), ".claude", "keybindings.json");
+  let config = { bindings: [] };
+  if (fs.existsSync(file)) {
+    try {
+      config = JSON.parse(fs.readFileSync(file, "utf8"));
+    } catch {
+      return [`Warning: could not read ${file}; add ${item.name}'s keybindings yourself.`];
+    }
+  }
+  if (!Array.isArray(config.bindings)) config.bindings = [];
+  const bound = (action) =>
+    config.bindings.some((block) => Object.values(block?.bindings ?? {}).includes(action));
+
+  const log = [];
+  let changed = false;
+  for (const { context, key, action } of bindings) {
+    if (typeof context !== "string" || typeof key !== "string" || typeof action !== "string") continue;
+    if (bound(action)) continue;
+    let block = config.bindings.find((b) => b?.context === context);
+    if (!block) config.bindings.push((block = { context, bindings: {} }));
+    block.bindings ??= {};
+    if (key in block.bindings) {
+      log.push(`Warning: ${key} is already bound in ${context}; bind ${action} to another key for ${item.name}.`);
+      continue;
+    }
+    block.bindings[key] = action;
+    changed = true;
+    log.push(`Bound ${key} (${context}) for ${item.name}`);
+  }
+  if (changed) {
+    fs.mkdirSync(path.dirname(file), { recursive: true });
+    fs.writeFileSync(file, JSON.stringify(config, null, 2) + "\n");
+  }
+  return log;
+}
+
 // Installs one item into a scope with a layout, then what its install hints
 // ask for. Returns log lines (warnings start with "Warning:"); throws an Error
 // with a user-facing message when the item can't be installed.
@@ -361,6 +403,9 @@ function installItem(item, scope, layout, options = {}) {
       log.push(`Installing ${req.name}, which ${item.name} uses:`);
       log.push(...installItem(req, scope, layout, { ...options, installing }));
     }
+  }
+  if (Array.isArray(hints.keybindings) && LAYOUTS[layout].folders.includes("claude")) {
+    log.push(...addKeybindings(item, hints.keybindings));
   }
   if (typeof hints.statusLine === "string" && LAYOUTS[layout].folders.includes("claude")) {
     const dir = loc.claude.split(path.sep).join("/");

@@ -38,7 +38,8 @@ The repo holds two kinds of items, each in its own top-level folder:
   `plugin.json`: `requires` (items installed alongside it), `statusLine` (the
   command to set, `{dir}` being the folder Claude Code loads the mod from) and
   `setup` (a script, relative to the mod's folder, run after an install from a
-  terminal).
+  terminal) and `keybindings` (`[{ context, key, action }]` added to the person's
+  `keybindings.json`, never over a key they already use).
 
 Categories exist only in the repo: everything installs flat under `~/.claude/skills/<name>`,
 so a name must be unique across categories and across skills and mods. For the same
