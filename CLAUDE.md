@@ -118,6 +118,6 @@ When a skill or mod changes, always follow this order:
 1. Edit its files in this repo (`skills/<category>/<name>/` or `mods/<name>/`) and commit them — `add` only installs git-tracked files.
 2. Run `node bin/agent-kit.mjs add skill <name>` or `node bin/agent-kit.mjs add mod <name>` (or `npx . add <kind> <name>`) from the repo root. It copies the tracked files into `~/.agents/<kind>s/<name>/`, overwriting what's there, and creates the `~/.claude/skills/<name>` symlink if it doesn't already exist.
 
-Run `node bin/agent-kit.mjs list` to see what's installed.
+Run `node bin/agent-kit.mjs list` to see each item's install status (not installed / installed / update). Both `list` and `add` take `--project [path]` to work on a project instead of the home folder, and `add` takes `--to both|claude|agents` and `--copy` to choose the folders (default: both, linked, for global; `.claude` only for a project). The steps above are the default global flow this repo's own skills use. Running it with no arguments opens an interactive picker meant for a human — agents use `list` and `add` instead.
 
 Never edit `~/.agents/<kind>s/<name>` or `~/.claude/skills/<name>` directly and treat that as done — those aren't tracked by git, so the change would be lost from version history and out of sync with the repo.

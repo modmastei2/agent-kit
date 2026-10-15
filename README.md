@@ -10,12 +10,47 @@ Skills and mods for [Claude Code](https://claude.com/claude-code). Install only 
 Requires Node.js 18+ and git.
 
 ```bash
-npx github:modmastei2/agent-kit list                    # see what's available
-npx github:modmastei2/agent-kit add skill code-review   # install a skill
-npx github:modmastei2/agent-kit add mod <mod-name>      # install a mod
+npx github:modmastei2/agent-kit
 ```
 
-Then start a new Claude Code session. Run `add` again to update.
+Run it from inside your project. It opens a picker:
+
+1. Pick what to install. Each item shows whether it's not installed, installed,
+   or has an update. Use ↑/↓ to move, space to select, `u` to select every
+   update, and enter when you're done.
+2. Pick where to install it:
+   - **Global** (your home folder): every project on your machine sees it.
+   - **Project**: only that project sees it.
+3. Tick the folders it goes into. You can pick one or both:
+   - **.claude** (`.claude/skills/`): Claude Code reads this one.
+   - **.agents** (`.agents/skills/` or `.agents/mods/`): for other agents
+     that read it.
+
+   If you pick both, you then choose **Link** (files live in `.agents` and
+   `.claude` links to it, so you update once) or **Copy** (a separate copy
+   in each folder). If you pick one, it's a plain copy.
+
+   The defaults are both folders linked for global, and `.claude` only for a
+   project, since plain copies can be committed for your team.
+4. Start a new Claude Code session.
+
+The picker offers the current folder as the project when it has a `.git` or
+`.claude` folder. You can also type another path, or pass one up front with
+`--project ../my-app`.
+
+For scripts, there's a non-interactive form:
+
+```bash
+npx github:modmastei2/agent-kit list                    # same list, printed
+npx github:modmastei2/agent-kit add skill code-review   # install or update a skill
+npx github:modmastei2/agent-kit add mod <mod-name>      # install or update a mod
+```
+
+Options:
+
+- `--project [path]`: work on a project instead of global. Without a path it uses the current directory.
+- `--to both|claude|agents`: choose the folders, same as step 3.
+- `--copy`: with `both`, make two copies instead of a link.
 
 <details>
 <summary>From a clone instead</summary>
@@ -23,12 +58,13 @@ Then start a new Claude Code session. Run `add` again to update.
 ```bash
 git clone https://github.com/modmastei2/agent-kit.git
 cd agent-kit
-node bin/agent-kit.mjs add skill code-review
+node bin/agent-kit.mjs                        # then choose "A project…" and type its path
+node bin/agent-kit.mjs --project ../my-app   # or pass it up front
 ```
 
 </details>
 
-Each item is installed at `~/.claude/skills/<name>`. To uninstall, delete that folder and `~/.agents/skills/<name>` (or `~/.agents/mods/<name>`).
+To uninstall, delete the item's folder from `.claude/skills/` and `.agents/skills/` (`.agents/mods/` for a mod), under your home folder or the project.
 
 ## Before you use one
 
