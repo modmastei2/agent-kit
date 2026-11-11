@@ -59,8 +59,18 @@ export function readRateLimits(rateLimits) {
     .map(([kind, w]) => ({
       kind,
       percentUsed: w.used_percentage,
-      resetsAtMs: Number.isFinite(w.resets_at) ? w.resets_at * 1000 : undefined,
+      resetsAtMs: toMs(w.resets_at),
     }))
+}
+
+// resets_at as unix seconds, milliseconds or an ISO date.
+function toMs(value) {
+  if (typeof value === 'string') {
+    const n = Number(value)
+    value = Number.isFinite(n) && value.trim() !== '' ? n : Date.parse(value)
+  }
+  if (!Number.isFinite(value)) return undefined
+  return value < 1e12 ? value * 1000 : value
 }
 
 // When the window empties at its pace so far, if that comes before it resets.
@@ -68,11 +78,11 @@ export function forecast(limit, now) {
   const window = WINDOWS[limit.kind]
   const label = window?.label ?? limit.kind
   const used = limit.percentUsed
-  const plain = { label, percentUsed: used }
+  const remainingMs = limit.resetsAtMs === undefined ? undefined : limit.resetsAtMs - now
+  const plain = { label, percentUsed: used, resetsInMs: remainingMs > 0 ? remainingMs : undefined }
 
-  if (window?.lengthMs === undefined || limit.resetsAtMs === undefined || used >= 100 || used <= 0) return plain
+  if (window?.lengthMs === undefined || remainingMs === undefined || used >= 100 || used <= 0) return plain
 
-  const remainingMs = limit.resetsAtMs - now
   const elapsedMs = window.lengthMs - remainingMs
   if (remainingMs <= 0 || elapsedMs < window.lengthMs * MIN_ELAPSED_SHARE) return plain
 
@@ -91,7 +101,7 @@ export function duration(ms) {
   if (minutes < 60) return `${minutes}m`
   const hours = Math.floor(minutes / 60)
   if (hours < 48) return `${hours}h${String(minutes % 60).padStart(2, '0')}`
-  return `${Math.round(hours / 24)}d`
+  return `${Math.floor(hours / 24)}d${String(hours % 24).padStart(2, '0')}`
 }
 
 const percent = value => `${Math.round(value)}%`
@@ -109,7 +119,8 @@ export function weatherLine({ contextPercent, rateLimits }, now, { isColored = t
   const parts = [
     `${icon} ${paint(COLORS.weather, word, isColored)} ${label('ctx')} ${hasContext ? value(contextPercent) : label('–')}`,
     ...forecasts.map(f => {
-      const reading = `${label(f.label)} ${value(f.percentUsed)}`
+      const resets = f.resetsInMs === undefined ? '' : ` ${label(`↻${duration(f.resetsInMs)}`)}`
+      const reading = `${label(f.label)} ${value(f.percentUsed)}${resets}`
       if (f.runsOutInMs === undefined) return reading
       const color = f.runsOutInMs <= CRITICAL_MS ? COLORS.critical : COLORS.warn
       return `${reading} ${paint(color, `empty in ~${duration(f.runsOutInMs)}`, isColored)}`

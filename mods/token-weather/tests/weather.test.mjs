@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 
-import { COLORS, forecast, levelOf, paint, readRateLimits, weatherLine } from '../scripts/weather.mjs'
+import { COLORS, duration, forecast, levelOf, paint, readRateLimits, weatherLine } from '../scripts/weather.mjs'
 
 const HOUR = 60 * 60 * 1000
 const NOW = Date.parse('2026-10-15T12:00:00Z')
@@ -52,8 +52,8 @@ test('colors each value by its own level, and the forecast apart from it', () =>
   assert.equal(
     line,
     `⛅ ${c('weather', 'Cloudy')} ${c('label', 'ctx')} ${c('ok', '36%')}${sep}` +
-      `${c('label', '5h')} ${c('ok', '8%')} ${c('warn', 'empty in ~3h27')}${sep}` +
-      `${c('label', 'weekly')} ${c('ok', '26%')}`,
+      `${c('label', '5h')} ${c('ok', '8%')} ${c('label', '↻4h42')} ${c('warn', 'empty in ~3h27')}${sep}` +
+      `${c('label', 'weekly')} ${c('ok', '26%')} ${c('label', '↻2d00')}`,
   )
 })
 
@@ -74,6 +74,19 @@ test('plain text without colors', () => {
     NOW,
     plain,
   )
-  assert.equal(line, '⛅ Cloudy ctx 30% · 5h 60% empty in ~1h20')
+  assert.equal(line, '⛅ Cloudy ctx 30% · 5h 60% ↻3h00 empty in ~1h20')
   assert.equal(weatherLine({ contextPercent: null, rateLimits: [] }, NOW, plain), '☀ Clear ctx –')
+})
+
+test('reads resets_at as seconds, milliseconds or an ISO date', () => {
+  const at = s => readRateLimits({ five_hour: { used_percentage: 1, resets_at: s } })[0].resetsAtMs
+  assert.equal(at(1738425600), 1738425600000)
+  assert.equal(at(1738425600000), 1738425600000)
+  assert.equal(at('2025-02-01T16:00:00Z'), 1738425600000)
+  assert.equal(at('soon'), undefined)
+})
+
+test('long durations keep their hours', () => {
+  assert.equal(duration(60 * HOUR), '2d12')
+  assert.equal(duration(90 * 60000), '1h30')
 })
