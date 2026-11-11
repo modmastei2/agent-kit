@@ -3,8 +3,8 @@
 //
 //   node screenshot.mjs <page.html> <out.png> [--node <id>] [--dark] [--size 1500x1300] [--outcome <id>]
 //
-// --node selects a node (via #hash) so its detail panel is rendered.
-// --outcome clicks an outcome button first, to check path highlighting (then --node, if given, is selected).
+// --node clicks a node, so its neighbours are highlighted and its detail panel is rendered.
+// --outcome clicks a scenario button instead, to check path highlighting (with --node, that step of the path is opened).
 // --timeout <seconds> kills a hung browser (default 45).
 // Browser: $BROWSER, else the usual Chrome / Edge / Chromium install paths.
 import fs from 'node:fs';
@@ -35,19 +35,20 @@ let target = path.resolve(page);
 const outcome = opt('--outcome'), node = opt('--node');
 const clean = s => String(s).replace(/["\\]/g, '');
 let tmp;
-if (outcome) {
-  // copy the page with a small script that clicks the outcome, then the node (outcome selection would otherwise win)
+if (outcome || node) {
+  // copy the page with a small script that clicks the scenario and/or the node
   tmp = path.join(path.dirname(target), `.__shot_${process.pid}.html`);
-  const js = `document.querySelector('.out[data-id="${clean(outcome)}"]')?.click();` +
-    (node ? `document.querySelector('.node[data-id="${clean(node)}"]')?.dispatchEvent(new Event('click'));` : '') +
+  const js = (outcome ? `document.querySelector('.out[data-id="${clean(outcome)}"]')?.click();` : '') +
+    (node ? (outcome ? `document.querySelector('.step[data-id="${clean(node)}"]')?.click();` : `document.querySelector('.node[data-id="${clean(node)}"]')?.dispatchEvent(new Event('click'));`) : '') +
     // a user-style click may smooth-scroll to the panel; pin the viewport back to the top
     `setTimeout(() => scrollTo({top: 0, behavior: 'instant'}), 300);`;
   fs.writeFileSync(tmp, fs.readFileSync(target, 'utf8').replace('</body>', `<script>${js}</script></body>`));
   target = tmp;
 }
-const url = pathToFileURL(target).href + (node && !outcome ? '#' + encodeURIComponent(node) : '');
+const url = pathToFileURL(target).href;
 const profile = fs.mkdtempSync(path.join(os.tmpdir(), 'lcd-shot-'));
 const [w, h] = (opt('--size', '1500x1300')).split('x');
+fs.rmSync(out, { force: true });
 try {
   execFileSync(browser, [
     '--headless=new', '--disable-gpu', '--hide-scrollbars',
@@ -57,6 +58,9 @@ try {
     `--user-data-dir=${profile}`,
     `--screenshot=${path.resolve(out)}`, url,
   ], { stdio: 'ignore', timeout: Number(opt('--timeout', 45)) * 1000, killSignal: 'SIGKILL' });
+  // some browsers (Edge on Windows) return before the file is written; wait for it
+  const until = Date.now() + 20000;
+  while (!fs.existsSync(out) && Date.now() < until) Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 250);
 } catch (e) {
   console.error(e.code === 'ETIMEDOUT' ? 'browser timed out (killed)' : `browser failed: ${e.message}`);
 } finally {
