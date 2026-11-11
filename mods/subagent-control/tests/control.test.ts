@@ -1,7 +1,7 @@
 import { describe, expect, mock, test } from 'claude-code/testing'
 import type { AgentSpawnInput, On } from 'claude-code'
 
-import { chordFor, describeStance, formatChord, nextStanceId, stanceOf } from '../hooks/stances'
+import { chordFor, effortLabel, formatChord, modelLabel, modelOf, nextEffort, nextModel } from '../hooks/stances'
 
 const START = { cwd: '/work', surface: 'terminal', isInteractive: true } as const
 
@@ -44,15 +44,18 @@ function fakeSession(on: On, store: Record<string, unknown>, spawned: (string | 
   })
 }
 
-describe('stances', () => {
-  test('cycle in order and wrap back to Auto', () => {
-    const order = ['auto']
-    for (let i = 0; i < 5; i++) order.push(nextStanceId(order[order.length - 1] ?? 'auto'))
-    expect(order).toEqual(['auto', 'fast', 'balanced', 'deep', 'max', 'auto'])
+describe('settings', () => {
+  test('model and effort each cycle in order and wrap back to Auto', () => {
+    const models: (string | undefined)[] = [undefined]
+    for (let i = 0; i < 5; i++) models.push(nextModel(models[models.length - 1]))
+    expect(models).toEqual([undefined, 'haiku', 'sonnet', 'opus', 'fable', undefined])
+    const efforts: (string | undefined)[] = [undefined]
+    for (let i = 0; i < 6; i++) efforts.push(nextEffort(efforts[efforts.length - 1] as never))
+    expect(efforts).toEqual([undefined, 'low', 'medium', 'high', 'xhigh', 'max', undefined])
   })
 
-  test('an unknown stance reads as Auto', () => {
-    expect(stanceOf('gone').id).toBe('auto')
+  test('an unknown model reads as Auto', () => {
+    expect(modelOf('gone')).toBeUndefined()
   })
 
   test('finds the chord bound to the cycle action', () => {
@@ -62,8 +65,9 @@ describe('stances', () => {
   })
 
   test('spell their settings and chord for the band', () => {
-    expect(describeStance(stanceOf('deep'))).toBe('Opus · High effort')
-    expect(describeStance(stanceOf('auto'))).toBe('Model and effort set per agent')
+    expect(modelLabel('opus')).toBe('Opus')
+    expect(effortLabel('xhigh')).toBe('Extra high')
+    expect(effortLabel(undefined)).toBe('Auto')
     expect(formatChord('ctrl+x a')).toBe('Ctrl+X A')
   })
 })
@@ -78,27 +82,40 @@ test('Auto leaves the subagent model alone', async ($, on) => {
   expect(spawned).toEqual([undefined])
 })
 
-test('a saved stance sets the model of every subagent but a fork', async ($, on) => {
+test('a saved model applies to every subagent but a fork', async ($, on) => {
   const spawned: (string | undefined)[] = []
-  fakeSession(on, { stance: 'deep' }, spawned)
+  fakeSession(on, { model: 'sonnet', effort: 'max' }, spawned)
 
   await $.session.start(START)
   await $.agent.spawn(SPAWN)
   await $.agent.spawn({ ...SPAWN, tool_use_id: 'toolu_2', fork: true })
 
-  expect(spawned).toEqual(['opus', undefined])
+  expect(spawned).toEqual(['sonnet', undefined])
 })
 
-test('pressing the band cycles the stance', async ($, on) => {
+test('a 0.x stance carries over as its model', async ($, on) => {
+  const spawned: (string | undefined)[] = []
+  fakeSession(on, { stance: 'deep' }, spawned)
+
+  await $.session.start(START)
+  await $.agent.spawn(SPAWN)
+
+  expect(spawned).toEqual(['opus'])
+})
+
+test('the band cycles model and effort on their own', async ($, on) => {
   const spawned: (string | undefined)[] = []
   fakeSession(on, {}, spawned)
   await $.session.start(START)
 
   const band = await $.ui.mount(BAND)
-  expect(await band.find({ type: 'Text', text: 'Auto' })).toBeDefined()
+  await band.press({ key: 'model' })
+  expect(await band.find({ type: 'Text', text: 'Haiku' })).toBeDefined()
 
-  await band.press({ key: 'cycle' })
-  expect(await band.find({ type: 'Text', text: 'Fast' })).toBeDefined()
+  await band.press({ key: 'effort' })
+  await band.press({ key: 'effort' })
+  expect(await band.find({ type: 'Text', text: 'Medium' })).toBeDefined()
+  expect(await band.find({ type: 'Text', text: 'Haiku' })).toBeDefined()
 
   await $.agent.spawn(SPAWN)
   expect(spawned).toEqual(['haiku'])
