@@ -1,7 +1,7 @@
 ---
 name: atlas
-version: 0.1.0
-description: Build an interactive, regenerable HTML atlas of how the things in a system relate — places or components linked to each other (maps joined by gates, rooms by doors, services by calls, sites by routes), the entities inside them (people, items, services, devices) and what those entities offer, hold or produce — first as a relation dataset extracted from the project's own data, then as one page that lays the nodes out left to right with ELK, routes every link around them, can show each node's own picture (a minimap, floor plan, diagram) with markers on it, and lists ids, source files and cross references in a detail panel. Use whenever someone wants to see, trace or document how a world, building, network or codebase connects end to end, or asks for a relationship map they can rebuild when data is added, even if they don't name HTML or a graph.
+version: 0.2.0
+description: Build an interactive, regenerable HTML atlas of how the things in a system relate — places or components linked to each other (maps joined by gates, rooms by doors, services by calls, sites by routes), the entities inside them (people, items, services, devices) and what those entities offer, hold or produce — first as a relation dataset extracted from the project's own data, then as one page that lays the nodes out left to right with ELK, draws one arrowed line per pair of nodes ( click it for what goes each way ), can show each node's own picture (a minimap, floor plan, diagram) with markers on it, and lists ids, source files and cross references in a detail panel. Use whenever someone wants to see, trace or document how a world, building, network or codebase connects end to end, or asks for a relationship map they can rebuild when data is added, even if they don't name HTML or a graph.
 ---
 
 # Atlas
@@ -62,10 +62,14 @@ Map the relation dataset to the atlas schema ( a separate step or script ): `gro
 order, `kinds` and `edgeKinds` with labels, `code` on everything people track by id, `files`,
 `sections` with `ref`s so back links come for free.
 
+Choose nodes so each is one unique thing at one level ( never two boxes for the same thing, never
+one box for two subjects ): the reader finds a thing in one place and the lines stay few. Put the
+many relations between two nodes on edges with labels; the page folds them into one line.
+
 ```bash
 node <skill>/scripts/build.mjs <atlas.json> --check [--overlay <extra.json>]
 node <skill>/scripts/build.mjs <atlas.json> <page.html> [--overlay <extra.json>] [--direction RIGHT|DOWN]
-node <skill>/scripts/screenshot.mjs <page.html> <shot.png> [--node <id>] [--entity <id>]
+node <skill>/scripts/screenshot.mjs <page.html> <shot.png> [--node <id>] [--entity <id>] [--link <n>]
 ```
 
 The first build installs elkjs into `~/.cache/atlas` unless the project has it ( needs npm ).
@@ -75,8 +79,8 @@ Wire both steps into one project command, so a rebuild is a single line.
 
 Fix every `WARN`. Then look at screenshots — the whole atlas, a busy node, an entity — and check:
 markers land where the picture says they should; nothing is isolated that the user can reach; the
-start points and groups read in the user's order; a newcomer can follow a link by colour or by
-hovering it. A node nothing reaches is a finding to report, not to hide.
+start points and groups read in the user's order; a newcomer can follow a line by colour or by
+hovering it, and a clicked line tells what goes out and what comes back. A node nothing reaches is a finding to report, not to hide.
 
 ### 6. Deliver
 
@@ -88,6 +92,6 @@ by overlay, and what the data revealed: dead links, unreachable places, ways in 
 
 - `scripts/build.mjs` — validate, merge overlays, ELK layout, embed.
 - `scripts/screenshot.mjs` — headless Chrome / Edge screenshot.
-- `assets/template.html` — the page: pan and zoom, toggles, search, tooltips, detail panel, light and dark.
+- `assets/template.html` — the page: pan and zoom, toggles, search, tooltips, one arrowed line per node pair, folding sections and trees, jump to either end of a line, click empty space or Esc to clear, light and dark.
 - `references/atlas-schema.md` — the dataset the build reads.
 - `references/extractor.md` — how to write a project's extractor.

@@ -24,6 +24,10 @@ One JSON file. `scripts/build.mjs` validates it, lays it out and embeds it in th
 
 The places that link to each other ( maps, rooms, floors, services, systems, sites ).
 
+A node is **one** thing at one level of detail: the build warns when two nodes share a name ( merge
+them, or name what tells them apart ) and when a name joins two subjects ( `Billing & Payments`:
+split it ). Names are plain text, no emoji: the page draws its own icons.
+
 | Field | Meaning |
 |---|---|
 | `id` | unique, stable across runs ( it is the URL hash and the overlay key ) |
@@ -43,10 +47,14 @@ line, a message bus, a shared service ).
 
 ## edges
 
-`{ from, fromPort, to, toPort, kind, label, both }`. Give the real direction: the build merges an
-edge and its reverse into one drawn both ways ( `↔` ), and a lone edge is shown one way ( dashed ).
-A port id not in the node's `ports` attaches to the node's centre. An edge to a node that does
-not exist is dropped with a warning.
+`{ from, fromPort, to, toPort, kind, label, both }`. Give the real direction. The page draws **one
+line per pair of nodes**, whatever the number of edges between them: arrowheads show which ways it
+goes ( `->`, `<-` or both ), and clicking the line lists its edges as Out ( a to b ) and In ( b to
+a ), with buttons to jump to either end. An edge and its exact reverse ( same ports, kind and
+label ) merge into one member shown both ways. Give each edge a `label` that says what travels
+( `POST /orders`, `charge`, a door's name ): without ports it is the member's only text. A port id
+not in the node's `ports` attaches to the node's centre. An edge to a node that does not exist is
+dropped with a warning.
 
 ## entities
 
@@ -54,9 +62,9 @@ The things on, in or between nodes ( people, items, services, records ).
 
 | Field | Meaning |
 |---|---|
-| `name`, `code`, `kind`, `badge` | `kind` is a `kinds` id ( colour, shape, toggle ); `badge` is a short tag after the name ( a level, a status ) |
+| `name`, `code`, `kind`, `badge` | `kind` is a `kinds` id ( colour, shape, toggle ); `badge` is a short tag after the name ( a level, a status ): keep it to a word or a number, badges lose their pull when everything has one |
 | `fields`, `files` | as on nodes |
-| `sections` | `{ title, text, rows: [ { ref, text, note, value } | { heading } ] }`: lists in the detail panel. `ref` links to a node or entity id; `heading` starts a sub-group |
+| `sections` | `{ title, text, rows: [ { ref, text, note, value } | { heading } ] }`: lists in the detail panel, each a section that folds ( more than 20 rows start folded ). `ref` links to a node or entity id; `heading` starts a branch, so a list with headings reads as a tree |
 
 Every `ref` also makes a back link: the referenced item lists who refers to it, under the section's
 title ( a product page lists the shops that sell it and the sources that drop it, without storing
@@ -70,6 +78,6 @@ population, sensors ), so the node stays readable.
 
 ## edgeKinds
 
-`{ label, color, dash }`. `color: "auto"` gives each edge its own hue ( golden-angle steps, so
+`{ label, color, dash }`. `color: "auto"` gives each line its own hue ( golden-angle steps, so
 neighbouring lines differ ); a fixed colour suits a kind that should read as one system ( a transit
 network ). `dash` draws the kind dotted.

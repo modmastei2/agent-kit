@@ -7,75 +7,123 @@
 <!-- Built by atlas scripts/build.mjs: edit the dataset and rebuild, not this page. -->
 <style>
 :root {
-  --bg: #0e1116; --panel: #161b22; --panel2: #1c232d; --line: #2a3340; --text: #d8dee6; --dim: #8a96a5;
-  --accent: #8fd0ff; --port: #f2c94c; --node: #3a4452;
+  --bg: #0e1116; --panel: #161b22; --panel2: #1c232d; --line: #2a3340; --text: #e2e7ee; --dim: #8a96a5; --faint: #5d6877;
+  --accent: #8fd0ff; --port: #f2c94c; --node: #3a4452; --halo: #0e1116; --grid: #232b36;
 }
-:root[data-theme="light"] { --bg: #f4f6f9; --panel: #ffffff; --panel2: #eef1f5; --line: #d6dce4; --text: #1d232b; --dim: #5f6b7a; --accent: #0b6bcb; --node: #b8c2cf; }
-@media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) { --bg: #f4f6f9; --panel: #ffffff; --panel2: #eef1f5; --line: #d6dce4; --text: #1d232b; --dim: #5f6b7a; --accent: #0b6bcb; --node: #b8c2cf; } }
+:root[data-theme="light"] { --bg: #f4f6f9; --panel: #ffffff; --panel2: #eef1f5; --line: #d6dce4; --text: #1d232b; --dim: #5f6b7a; --faint: #98a3b1; --accent: #0b6bcb; --node: #b8c2cf; --halo: #ffffff; --grid: #e3e8ee; }
+@media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) { --bg: #f4f6f9; --panel: #ffffff; --panel2: #eef1f5; --line: #d6dce4; --text: #1d232b; --dim: #5f6b7a; --faint: #98a3b1; --accent: #0b6bcb; --node: #b8c2cf; --halo: #ffffff; --grid: #e3e8ee; } }
 * { box-sizing: border-box; }
-html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text); font: 13px/1.45 system-ui, "Segoe UI", Tahoma, sans-serif; overflow: hidden; }
+html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text); font: 13px/1.5 system-ui, "Segoe UI", Tahoma, sans-serif; overflow: hidden; }
 button, input { font: inherit; color: inherit; }
-#app { display: grid; grid-template-columns: 290px 1fr 370px; height: 100%; }
+#app { display: grid; grid-template-columns: 290px 1fr 380px; height: 100%; }
 aside { background: var(--panel); border-right: 1px solid var(--line); display: flex; flex-direction: column; min-height: 0; }
 #detail { border-right: 0; border-left: 1px solid var(--line); }
-header { padding: 12px 14px 8px; border-bottom: 1px solid var(--line); }
-h1 { font-size: 15px; margin: 0 0 8px; }
-h2 { font-size: 14px; margin: 0 0 4px; }
-h3 { font-size: 12px; margin: 14px 0 6px; color: var(--dim); text-transform: uppercase; letter-spacing: .6px; }
-#q { width: 100%; padding: 7px 9px; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; outline: none; }
+header { padding: 14px 14px 10px; border-bottom: 1px solid var(--line); }
+.ic { width: 14px; height: 14px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; vertical-align: -2px; }
+
+/* type scale: panel title > section > row > meta */
+h1 { font-size: 16px; font-weight: 650; margin: 0 0 10px; }
+.ptitle { font-size: 18px; font-weight: 650; line-height: 1.3; margin: 0; text-wrap: balance; overflow-wrap: anywhere; }
+.psub { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 6px 0 4px; }
+.kicker { font-size: 11px; font-weight: 600; letter-spacing: .5px; text-transform: uppercase; color: var(--dim); display: flex; align-items: center; gap: 5px; margin-bottom: 4px; }
+.id { color: var(--dim); font-size: 11.5px; font-family: Consolas, ui-monospace, monospace; }
+.muted { color: var(--dim); }
+p { margin: 6px 0; }
+
+#q { width: 100%; padding: 7px 9px 7px 30px; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; outline: none; }
 #q:focus { border-color: var(--accent); }
-.toggles { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px; }
-.toggles label { display: flex; align-items: center; gap: 4px; padding: 2px 7px; border: 1px solid var(--line); border-radius: 10px; cursor: pointer; user-select: none; font-size: 12px; }
+.search { position: relative; }
+.search .ic { position: absolute; left: 9px; top: 9px; color: var(--dim); }
+.toggles { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 10px; }
+.toggles label { display: flex; align-items: center; gap: 5px; padding: 2px 8px; border: 1px solid var(--line); border-radius: 10px; cursor: pointer; user-select: none; font-size: 12px; }
 .toggles input { margin: 0; }
 .sw { width: 9px; height: 9px; border-radius: 50%; display: inline-block; flex: none; }
-.scroll { overflow: auto; flex: 1; padding: 6px 14px 16px; min-height: 0; }
-#detail .scroll { padding-top: 12px; }
-.row { display: flex; justify-content: space-between; gap: 8px; padding: 3px 6px; border-radius: 4px; cursor: pointer; }
-.row:hover { background: var(--panel2); }
-.row .r { color: var(--dim); white-space: nowrap; font-size: 12px; }
-.tag { font-size: 11px; padding: 0 5px; border-radius: 3px; background: var(--panel2); white-space: nowrap; }
-.id { color: var(--dim); font-size: 11px; font-family: Consolas, ui-monospace, monospace; margin-left: 4px; }
-.muted { color: var(--dim); }
-#view { position: relative; overflow: hidden; cursor: grab; background: radial-gradient(circle at 1px 1px, color-mix(in srgb, var(--dim) 25%, transparent) 1px, transparent 0) 0 0 / 24px 24px, var(--bg); }
+.scroll { overflow: auto; flex: 1; padding: 4px 12px 20px; min-height: 0; }
+#detail .phead { padding: 14px 16px 10px; border-bottom: 1px solid var(--line); }
+#detail .scroll { padding: 6px 12px 24px; }
+
+/* sections fold; the summary is the heading */
+details.sec { border-bottom: 1px solid var(--line); }
+details.sec > summary { list-style: none; display: flex; align-items: center; gap: 6px; padding: 9px 4px; cursor: pointer; font-weight: 600; font-size: 13px; user-select: none; }
+details.sec > summary::-webkit-details-marker, details.tree > summary::-webkit-details-marker { display: none; }
+details.sec > summary .i-chev, details.tree > summary .i-chev { transition: transform .12s; color: var(--dim); }
+details[open] > summary .i-chev { transform: rotate(90deg); }
+details.sec > summary .grow { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.secbody { padding: 0 0 10px; }
+
+/* rows: one line, clipped with the full text on hover */
+.row { display: flex; align-items: center; gap: 8px; padding: 4px 6px; border-radius: 5px; min-width: 0; }
+.row[data-go], .row[data-act] { cursor: pointer; }
+.row[data-go]:hover, .row[data-act]:hover { background: var(--panel2); }
+.row .name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.row .r { flex: none; display: flex; gap: 4px; align-items: center; }
+.badge { font-size: 11px; line-height: 16px; padding: 0 6px; border-radius: 8px; background: var(--panel2); color: var(--dim); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.badge.kind { background: transparent; border: 1px solid currentColor; }
+.badge.dir { color: var(--accent); background: color-mix(in srgb, var(--accent) 14%, transparent); }
+
+/* tree: nested groups with a guide line */
+details.tree > summary { list-style: none; display: flex; align-items: center; gap: 6px; padding: 4px 6px; border-radius: 5px; cursor: pointer; min-width: 0; }
+details.tree > summary:hover { background: var(--panel2); }
+details.tree > summary .name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.kids { margin-left: 12px; padding-left: 8px; border-left: 1px solid var(--line); }
+.leaf { padding-left: 20px; }
+
+.fields { display: grid; grid-template-columns: minmax(80px, auto) 1fr; gap: 3px 12px; font-size: 12.5px; padding: 6px 4px 10px; }
+.fields b { color: var(--dim); font-weight: 400; }
+.fields span { overflow-wrap: anywhere; }
+.files span { font-family: Consolas, ui-monospace, monospace; font-size: 12px; }
+.a { color: var(--accent); cursor: pointer; }
+.a:hover { text-decoration: underline; }
+.btns { display: flex; gap: 6px; margin-top: 10px; }
+.btn { display: inline-flex; align-items: center; gap: 6px; padding: 5px 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel2); cursor: pointer; min-width: 0; max-width: 50%; }
+.btn:hover { border-color: var(--accent); }
+.btn span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.legend .row { padding: 2px 6px; }
+.note { font-size: 12px; color: var(--dim); }
+
+#view { position: relative; overflow: hidden; cursor: grab; background: radial-gradient(circle at 1px 1px, var(--grid) 1px, transparent 0) 0 0 / 24px 24px, var(--bg); }
 #view.drag { cursor: grabbing; }
 #world { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
 #links { position: absolute; left: 0; top: 0; overflow: visible; pointer-events: none; }
-#links path { fill: none; stroke-width: 2.5; vector-effect: non-scaling-stroke; }
-/* dashes keep their length on screen at any zoom: --k is 1 / zoom */
-#links path.oneway { stroke-dasharray: calc(8px * var(--k, 1)) calc(6px * var(--k, 1)); }
+/* every line sits on a halo of the background colour, so it reads over the grid and the images */
+#links path { fill: none; vector-effect: non-scaling-stroke; }
+#links path.halo { stroke: var(--halo); stroke-width: 7; opacity: .9; }
+#links path.ln { stroke-width: 3; }
 #links path.dotted { stroke-dasharray: calc(3px * var(--k, 1)) calc(5px * var(--k, 1)); }
-#links path.hit { stroke: transparent !important; stroke-width: 14; stroke-dasharray: none !important; pointer-events: stroke; }
-#links.picked path:not(.hit) { opacity: .15; }
-#links.picked path.on { opacity: 1; stroke-width: 5; }
-#links path.hov { stroke-width: 6 !important; opacity: 1 !important; }
+#links path.hit { stroke: transparent; stroke-width: 16; pointer-events: stroke; cursor: pointer; }
+#links .arrow { stroke: var(--halo); stroke-width: 1.5; vector-effect: non-scaling-stroke; }
+#links g.lk { transition: opacity .12s; }
+#links.picked g.lk { opacity: .4; }
+#links.picked g.lk.on { opacity: 1; }
+#links g.lk.on path.ln, #links g.lk.hov path.ln { stroke-width: 5; }
+#links g.lk.on path.halo, #links g.lk.hov path.halo { stroke-width: 10; }
 .node { position: absolute; border: 2px solid var(--node); background: var(--panel2); }
-.node.plain { border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 8px; font-size: 20px; }
+.node.plain { border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 10px; cursor: pointer; }
 .node.sel { outline: 3px solid var(--accent); outline-offset: 3px; }
 .node img { position: absolute; inset: 0; width: 100%; height: 100%; opacity: .8; pointer-events: none; }
-.node .title { position: absolute; left: 0; bottom: 100%; margin-bottom: 4px; white-space: nowrap; font-weight: 600; font-size: 22px; cursor: pointer; }
-.node.plain .title { position: static; margin: 0; white-space: normal; }
+.node .title { position: absolute; left: 0; bottom: 100%; margin-bottom: 6px; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 650; font-size: 22px; line-height: 1.2; cursor: pointer; }
+.node .title .id { font-size: 15px; margin-left: 6px; }
+.node.plain .title { position: static; margin: 0; white-space: normal; font-size: 18px; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; text-wrap: balance; }
+.node.plain .title .id { display: block; margin: 2px 0 0; }
 .node svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
 .mk { position: absolute; width: 12px; height: 12px; transform: translate(-50%, -50%); border: 2px solid #000; cursor: pointer; }
 .mk.dot { border-radius: 50%; }
 .mk.diamond { transform: translate(-50%, -50%) rotate(45deg); }
 .mk.star { width: 22px; height: 22px; clip-path: polygon(50% 0, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%); }
 .mk.hl { box-shadow: 0 0 0 4px var(--accent); z-index: 5; }
-.lbl { position: absolute; transform: translate(-50%, 8px); white-space: nowrap; font-size: 12px; padding: 0 4px; border-radius: 3px; background: rgba(0,0,0,.65); color: #fff; pointer-events: none; }
+.lbl { position: absolute; transform: translate(-50%, 8px); white-space: nowrap; max-width: 260px; overflow: hidden; text-overflow: ellipsis; font-size: 12px; padding: 0 4px; border-radius: 3px; background: rgba(0,0,0,.7); color: #fff; pointer-events: none; }
 body.no-labels .lbl, body.no-links #links { display: none; }
 #zoom { position: absolute; right: 12px; bottom: 12px; display: flex; gap: 4px; }
-#zoom button { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 4px 10px; cursor: pointer; }
-#hover { position: absolute; pointer-events: none; background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 5px 8px; font-size: 12px; display: none; max-width: 380px; z-index: 10; box-shadow: 0 4px 14px rgba(0,0,0,.3); }
-table { width: 100%; border-collapse: collapse; font-size: 12px; }
-td { padding: 2px 4px; border-bottom: 1px solid var(--line); vertical-align: top; }
-td.n { text-align: right; white-space: nowrap; color: var(--dim); }
-tr.grp td { color: var(--dim); font-style: italic; border-bottom: 0; padding-top: 6px; }
-.a { color: var(--accent); cursor: pointer; }
-.a:hover { text-decoration: underline; }
-.stat { display: grid; grid-template-columns: auto 1fr; gap: 2px 10px; font-size: 12px; }
-.stat b { color: var(--dim); font-weight: 400; }
-.files span { font-family: Consolas, ui-monospace, monospace; word-break: break-all; }
-.legend div { display: flex; align-items: center; gap: 6px; font-size: 12px; margin: 2px 0; }
+#zoom button { display: flex; align-items: center; gap: 4px; background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 5px 9px; cursor: pointer; }
+#hover { position: absolute; pointer-events: none; background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 6px 9px; font-size: 12px; display: none; max-width: 380px; z-index: 10; box-shadow: 0 4px 14px rgba(0,0,0,.3); }
+#hover .hl1 { display: flex; align-items: center; gap: 6px; font-weight: 600; }
 @media (max-width: 900px) { #app { grid-template-columns: 1fr; grid-template-rows: auto 1fr 40%; } #side .scroll { max-height: 120px; } }
+/* thin scrollbars in the page's colours, not the system's bright default */
+* { scrollbar-width: thin; scrollbar-color: color-mix(in srgb, var(--dim) 45%, transparent) transparent; }
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: color-mix(in srgb, var(--dim) 45%, transparent); border-radius: 4px; border: 2px solid transparent; background-clip: padding-box; }
+::-webkit-scrollbar-thumb:hover { background-color: var(--dim); }
 </style>
 </head>
 <body>
@@ -83,7 +131,7 @@ tr.grp td { color: var(--dim); font-style: italic; border-bottom: 0; padding-top
   <aside id="side">
     <header>
       <h1 id="title"></h1>
-      <input id="q" autocomplete="off">
+      <div class="search"><svg class="ic" viewBox="0 0 16 16"><circle cx="7" cy="7" r="4.5"/><path d="M10.5 10.5 14 14"/></svg><input id="q" autocomplete="off"></div>
       <div class="toggles" id="toggles"></div>
     </header>
     <div class="scroll" id="list"></div>
@@ -91,30 +139,53 @@ tr.grp td { color: var(--dim); font-style: italic; border-bottom: 0; padding-top
   <main id="view">
     <div id="world"><svg id="links"></svg></div>
     <div id="hover"></div>
-    <div id="zoom"><button id="zin">+</button><button id="zout">−</button><button id="fit"></button></div>
+    <div id="zoom"><button id="zin" aria-label="zoom in"></button><button id="zout" aria-label="zoom out"></button><button id="fit"></button></div>
   </main>
-  <aside id="detail"><div class="scroll" id="info"></div></aside>
+  <aside id="detail"><div class="phead" id="phead"></div><div class="scroll" id="info"></div></aside>
 </div>
 <script>
 const ATLAS = /*__ATLAS__*/null;
 const D = ATLAS.data, L = ATLAS.layout;
 const UI = Object.assign({
-  search: 'Search…', fit: 'All', links: 'Links', labels: 'Labels', legend: 'Legend', notFound: 'Nothing found',
-  nodes: 'Nodes', entities: 'Entities', files: 'Files', connections: 'Connections', inside: 'Inside',
+  search: 'Search…', fit: 'All', links: 'Lines', labels: 'Labels', legend: 'Legend', notFound: 'Nothing found',
+  nodes: 'Nodes', entities: 'Entities', files: 'Files', details: 'Details', connections: 'Connections', inside: 'Inside',
   appearsIn: 'Appears in', referencedBy: 'Referenced by', points: 'points', noTarget: 'leads nowhere',
-  oneWay: 'one way', start: 'Start here', hint: 'Drag to pan, scroll to zoom. Click a node, a marker or a connection for details.',
+  line: 'Line', out: 'Out', in: 'In', goFrom: 'Go to start', goTo: 'Go to end', start: 'Start here', overview: 'Overview',
+  hint: 'Drag to pan, scroll to zoom. Click a node, a marker or a line for details; click empty space or press Esc to clear.',
 }, D.ui || {});
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const nodes = Object.fromEntries(D.nodes.map(n => [n.id, n]));
 const ents = D.entities;
-const code = (id, o) => `<span class="id">${esc(o?.code ?? id)}</span>`;
 const kindOf = k => D.kinds[k] || { label: k, color: '#9aa5b4', shape: 'dot' };
 const hue = i => `hsl(${(i * 137.508) % 360},75%,58%)`;
 const groupOf = id => D.groups.find(g => g.id === id);
+const nameOf = id => nodes[id]?.name || ents[id]?.name || id;
+
+// ---------- icons: one stroke set, no emoji ----------
+const IC = {
+  chev: '<path d="M6 4l4 4-4 4"/>', node: '<rect x="2.5" y="3" width="11" height="10" rx="2"/>',
+  entity: '<circle cx="8" cy="8" r="4.5"/>', file: '<path d="M4 2h5l3 3v9H4z"/><path d="M9 2v3h3"/>',
+  line: '<path d="M2 12C6 12 6 4 14 4"/>', right: '<path d="M2 8h11M9 4l4 4-4 4"/>', left: '<path d="M14 8H3M7 4 3 8l4 4"/>',
+  both: '<path d="M2 8h12M5 5 2 8l3 3M11 5l3 3-3 3"/>', jump: '<path d="M3 8h9M9 5l3 3-3 3"/><path d="M14 3v10"/>',
+  back: '<path d="M13 8H4M7 5 4 8l3 3"/><path d="M2 3v10"/>', plus: '<path d="M8 3v10M3 8h10"/>', minus: '<path d="M3 8h10"/>',
+  fit: '<path d="M2 6V2h4M10 2h4v4M14 10v4h-4M6 14H2v-4"/>', info: '<circle cx="8" cy="8" r="6"/><path d="M8 7v4M8 5v.01"/>',
+  link: '<path d="M7 9a3 3 0 0 0 4 0l2-2a3 3 0 0 0-4-4l-1 1"/><path d="M9 7a3 3 0 0 0-4 0L3 9a3 3 0 0 0 4 4l1-1"/>',
+  pin: '<path d="M8 14s4.5-4 4.5-7.5a4.5 4.5 0 0 0-9 0C3.5 10 8 14 8 14z"/><circle cx="8" cy="6.5" r="1.5"/>',
+};
+const ic = n => `<svg class="ic i-${n}" viewBox="0 0 16 16">${IC[n] || ''}</svg>`;
+const dirIcon = l => ic(l.fwd && l.back ? 'both' : l.fwd ? 'right' : 'left');
+const code = (id, o) => `<span class="id">${esc(o?.code ?? id)}</span>`;
+const badge = (t, cls = '', style = '') => t === '' || t == null ? '' : `<span class="badge ${cls}" style="${style}">${esc(t)}</span>`;
+// a section folds; long ones start folded
+const sec = (title, count, body, open = count == null || count <= 20) => body ? `<details class="sec"${open ? ' open' : ''}><summary>${ic('chev')}<span class="grow" title="${esc(title)}">${esc(title)}</span>${count != null ? badge(count) : ''}</summary><div class="secbody">${body}</div></details>` : '';
+const tree = (head, kids, open = false) => `<details class="tree"${open ? ' open' : ''}><summary>${ic('chev')}${head}</summary><div class="kids">${kids}</div></details>`;
+const row = (name, right = '', go = '', tip = '') => `<div class="row"${go ? ` data-go="${esc(go)}"` : ''}><span class="name" title="${esc(tip)}">${name}</span>${right ? `<span class="r">${right}</span>` : ''}</div>`;
+
 document.title = D.title || document.title;
 $('#title').textContent = D.title || 'Atlas';
-$('#q').placeholder = UI.search; $('#fit').textContent = UI.fit;
+$('#q').placeholder = UI.search;
+$('#zin').innerHTML = ic('plus'); $('#zout').innerHTML = ic('minus'); $('#fit').innerHTML = ic('fit') + esc(UI.fit);
 
 // ---------- indexes ----------
 const appears = {}, backrefs = {};
@@ -124,6 +195,7 @@ const addRefs = (from, sections) => {
 };
 for (const [id, e] of Object.entries(ents)) addRefs(id, e.sections);
 for (const n of D.nodes) addRefs(n.id, n.sections);
+const linksOf = id => L.links.map((l, i) => [l, i]).filter(([l]) => l.a === id || l.b === id);
 
 // ---------- geometry ----------
 const box = id => L.nodes[id];
@@ -137,21 +209,30 @@ const portPt = (nid, pid) => {
   const [x, y] = p ? local(n, [p.x, p.y]) : [b.w / 2, b.h / 2];
   return [b.x + x, b.y + y];
 };
+const portName = (nid, pid) => pid == null ? '' : nodes[nid]?.ports.find(p => String(p.id) === String(pid))?.name ?? String(pid);
 
 // ---------- draw ----------
 const world = $('#world'), links = $('#links');
 world.style.width = L.size[0] + 'px'; world.style.height = L.size[1] + 'px';
 links.setAttribute('width', L.size[0]); links.setAttribute('height', L.size[1]);
 const nodeEl = {}, markEl = {};
-const label = (el, x, y, text) => { const l = document.createElement('div'); l.className = 'lbl'; l.style.left = x + 'px'; l.style.top = y + 'px'; l.textContent = text; el.appendChild(l); };
+const label = (el, x, y, text, kind) => { const l = document.createElement('div'); l.className = 'lbl'; l.style.left = x + 'px'; l.style.top = y + 'px'; l.textContent = text; l.dataset.kind = kind; el.appendChild(l); };
+function portTarget(nid, pid) {
+  for (const l of L.links) for (const m of l.members) {
+    if (m.from === nid && String(m.fromPort) === String(pid)) return { node: m.to, port: m.toPort };
+    if (m.both && m.to === nid && String(m.toPort) === String(pid)) return { node: m.from, port: m.fromPort };
+  }
+  return null;
+}
 for (const n of D.nodes) {
   const b = box(n.id); if (!b) continue;
   const el = document.createElement('div');
   el.className = 'node' + (n.image ? '' : ' plain');
+  el.dataset.node = n.id;
   Object.assign(el.style, { left: b.x + 'px', top: b.y + 'px', width: b.w + 'px', height: b.h + 'px' });
   const g = groupOf(n.group); if (g?.color) el.style.borderColor = g.color;
   el.innerHTML = (n.image ? `<img src="${esc(n.image)}" loading="lazy" alt="">` : '') +
-    `<div class="title" data-node="${esc(n.id)}">${esc(n.name || n.id)}${code(n.id, n)}</div>`;
+    `<div class="title" data-node="${esc(n.id)}" title="${esc(n.name || n.id)}">${esc(n.name || n.id)}${code(n.id, n)}</div>`;
   let dots = '';
   for (const m of n.markers) {
     const k = kindOf(m.kind), e = ents[m.entity];
@@ -159,7 +240,7 @@ for (const n of D.nodes) {
     if (k.spread) {
       for (const p of m.points) { const [x, y] = local(n, p); dots += `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="3" fill="${k.color}" data-entity="${esc(m.entity || '')}" data-kind="${esc(m.kind)}"/>`; }
       const c = m.points.reduce((a, p) => [a[0] + p[0] / m.points.length, a[1] + p[1] / m.points.length], [0, 0]);
-      const [x, y] = local(n, c); label(el, x, y, text); el.lastChild.dataset.kind = m.kind;
+      const [x, y] = local(n, c); label(el, x, y, text, m.kind);
       continue;
     }
     for (const p of m.points) {
@@ -168,7 +249,7 @@ for (const n of D.nodes) {
       mk.className = 'mk ' + (k.shape || 'dot'); mk.style.left = x + 'px'; mk.style.top = y + 'px'; mk.style.background = k.color;
       if (m.entity) mk.dataset.entity = m.entity; mk.dataset.kind = m.kind; mk.dataset.node = n.id;
       el.appendChild(mk); (markEl[m.entity] ??= []).push(mk);
-      if (text) { label(el, x, y, text); el.lastChild.dataset.kind = m.kind; }
+      if (text) label(el, x, y, text, m.kind);
     }
   }
   for (const p of n.ports) {
@@ -179,51 +260,57 @@ for (const n of D.nodes) {
     mk.dataset.node = n.id; mk.dataset.port = p.id; mk.dataset.kind = '__port';
     el.appendChild(mk);
     const to = portTarget(n.id, p.id);
-    label(el, x, y, to ? '→ ' + (nodes[to.node]?.name || to.node) : (p.name ?? p.id)); el.lastChild.dataset.kind = '__port';
+    label(el, x, y, to ? '→ ' + nameOf(to.node) : (p.name ?? p.id), '__port');
   }
   el.insertAdjacentHTML('beforeend', dots ? `<svg>${dots}</svg>` : '');
   world.appendChild(el); nodeEl[n.id] = el;
 }
-function portTarget(nid, pid) {
-  for (const e of L.edges) {
-    if (e.from === nid && String(e.fromPort) === String(pid)) return { node: e.to, port: e.toPort };
-    if (e.both && e.to === nid && String(e.toPort) === String(pid)) return { node: e.from, port: e.fromPort };
-  }
-  return null;
-}
-const endTip = (nid, pid) => `${esc(nodes[nid]?.name || nid)}${code(nid, nodes[nid])}${pid != null ? ` <span class="muted">${esc(nodes[nid]?.ports.find(p => String(p.id) === String(pid))?.name ?? pid)}</span>` : ''}`;
+
+// one line per pair of nodes, arrowheads at the ends it goes to; arrows keep their size on screen
+const arrow = (tip, from, color) => {
+  const a = Math.atan2(tip[1] - from[1], tip[0] - from[0]) * 180 / Math.PI;
+  return `<path class="arrow" d="M1,0 L-16,-8 L-11,0 L-16,8 Z" style="fill:${color}" data-t="translate(${tip[0].toFixed(0)} ${tip[1].toFixed(0)}) rotate(${a.toFixed(1)})"/>`;
+};
+const lineKinds = l => [...new Set(l.members.map(m => m.kind || ''))];
 let svg = '';
-L.edges.forEach((e, i) => {
-  const ek = D.edgeKinds[e.kind] || {};
-  const pts = [portPt(e.from, e.fromPort), ...e.pts, portPt(e.to, e.toPort)];
+L.links.forEach((l, i) => {
+  const kinds = lineKinds(l), ek = D.edgeKinds[kinds[0]] || {};
+  const pts = [portPt(l.a, l.aPort), ...l.pts, portPt(l.b, l.bPort)];
   const d = 'M' + pts.map(p => p[0].toFixed(0) + ',' + p[1].toFixed(0)).join(' L');
   const color = ek.color && ek.color !== 'auto' ? ek.color : hue(i);
-  const dash = ek.dash ? 'class="dotted"' : e.both ? '' : 'class="oneway"';
-  const tip = `${ek.label ? esc(ek.label) + ': ' : ''}${endTip(e.from, e.fromPort)} ${e.both ? '↔' : '→'} ${endTip(e.to, e.toPort)}` +
-    (e.label ? `<br><span class="muted">${esc(e.label)}</span>` : '') + (e.both ? '' : ` <span class="muted">( ${esc(UI.oneWay)} )</span>`);
-  svg += `<path d="${d}" style="stroke:${color}" ${dash} data-a="${esc(e.from)}" data-b="${esc(e.to)}" data-ek="${esc(e.kind || '')}"/><path class="hit" d="${d}" data-tip="${esc(tip)}"/>`;
+  const dotted = kinds.every(k => D.edgeKinds[k]?.dash) ? ' dotted' : '';
+  // the arrow sits where the line meets the box, not at the port deep inside an image
+  const ends = [l.pts[0] || pts[1], l.pts[l.pts.length - 1] || pts[pts.length - 2]];
+  svg += `<g class="lk" data-link="${i}" data-a="${esc(l.a)}" data-b="${esc(l.b)}" data-ek="${esc(kinds.join(' '))}">` +
+    `<path class="halo" d="${d}"/><path class="ln${dotted}" d="${d}" style="stroke:${color}"/>` +
+    (l.fwd && l.pts.length ? arrow(ends[1], l.pts[l.pts.length - 2] || pts[0], color) : '') +
+    (l.back && l.pts.length ? arrow(ends[0], l.pts[1] || pts[pts.length - 1], color) : '') +
+    `<path class="hit" d="${d}"/></g>`;
 });
 links.innerHTML = svg;
+const arrows = [...links.querySelectorAll('.arrow')];
+const linkEl = i => links.querySelector(`g.lk[data-link="${i}"]`);
 
 // ---------- toggles ----------
 const tg = $('#toggles');
-const toggle = (key, text, color, apply) => {
+const toggle = (text, color, apply) => {
   const l = document.createElement('label');
   l.innerHTML = `<input type="checkbox" checked>${color ? `<span class="sw" style="background:${color}"></span>` : ''}${esc(text)}`;
   l.firstChild.onchange = e => apply(e.target.checked);
   tg.appendChild(l);
 };
 const hideKind = (k, on) => document.querySelectorAll(`[data-kind="${CSS.escape(k)}"]`).forEach(e => e.style.display = on ? '' : 'none');
-toggle('links', UI.links, null, on => document.body.classList.toggle('no-links', !on));
-for (const [k, v] of Object.entries(D.edgeKinds)) toggle('ek:' + k, v.label || k, v.color !== 'auto' ? v.color : null,
-  on => document.querySelectorAll(`#links path[data-ek="${CSS.escape(k)}"]`).forEach(p => { p.style.display = on ? '' : 'none'; p.nextElementSibling.style.display = on ? '' : 'none'; }));
-for (const [k, v] of Object.entries(D.kinds)) toggle('k:' + k, v.label || k, v.color, on => hideKind(k, on));
-toggle('labels', UI.labels, null, on => document.body.classList.toggle('no-labels', !on));
+const hiddenEk = new Set();
+const applyEk = () => links.querySelectorAll('g.lk').forEach(g => g.style.display = g.dataset.ek.split(' ').every(k => hiddenEk.has(k)) ? 'none' : '');
+toggle(UI.links, null, on => document.body.classList.toggle('no-links', !on));
+if (Object.keys(D.edgeKinds).length > 1) for (const [k, v] of Object.entries(D.edgeKinds)) toggle(v.label || k, v.color !== 'auto' ? v.color : null, on => { on ? hiddenEk.delete(k) : hiddenEk.add(k); applyEk(); });
+for (const [k, v] of Object.entries(D.kinds)) toggle(v.label || k, v.color, on => hideKind(k, on));
+toggle(UI.labels, null, on => document.body.classList.toggle('no-labels', !on));
 
 // ---------- pan and zoom ----------
 const view = $('#view');
 let z = 0.3, tx = 20, ty = 20;
-const apply = () => { world.style.transform = `translate(${tx}px,${ty}px) scale(${z})`; links.style.setProperty('--k', 1 / z); };
+const apply = () => { world.style.transform = `translate(${tx}px,${ty}px) scale(${z})`; links.style.setProperty('--k', 1 / z); for (const a of arrows) a.setAttribute('transform', `${a.dataset.t} scale(${1 / z})`); };
 function zoomAt(f, cx, cy) { const nz = Math.min(4, Math.max(0.02, z * f)); tx = cx - (cx - tx) * nz / z; ty = cy - (cy - ty) * nz / z; z = nz; apply(); }
 view.addEventListener('wheel', e => { e.preventDefault(); const r = view.getBoundingClientRect(); zoomAt(e.deltaY < 0 ? 1.15 : 1 / 1.15, e.clientX - r.left, e.clientY - r.top); }, { passive: false });
 let drag = null, moved = false;
@@ -237,105 +324,158 @@ $('#zin').onclick = () => { const r = view.getBoundingClientRect(); zoomAt(1.3, 
 $('#zout').onclick = () => { const r = view.getBoundingClientRect(); zoomAt(1 / 1.3, r.width / 2, r.height / 2); };
 $('#fit').onclick = fitAll;
 const focusNode = id => { const b = box(id); if (b) fit(b.x, b.y, b.w, b.h); };
-function focusPoint(nid, p) { const n = nodes[nid], b = box(nid), [x, y] = local(n, p); const r = view.getBoundingClientRect(); z = Math.max(z, 1); tx = r.width / 2 - (b.x + x) * z; ty = r.height / 2 - (b.y + y) * z; apply(); }
+function centreOn([x, y], minZ = 1) { const r = view.getBoundingClientRect(); z = Math.max(z, minZ); tx = r.width / 2 - x * z; ty = r.height / 2 - y * z; apply(); }
+function focusPoint(nid, p) { const b = box(nid), [x, y] = local(nodes[nid], p); centreOn([b.x + x, b.y + y]); }
+function focusLink(l) { const xs = [], ys = []; for (const p of [portPt(l.a, l.aPort), ...l.pts, portPt(l.b, l.bPort)]) { xs.push(p[0]); ys.push(p[1]); } const x = Math.min(...xs), y = Math.min(...ys); fit(x, y, Math.max(...xs) - x || 1, Math.max(...ys) - y || 1, 80); }
 
 // ---------- hover and click ----------
 const hv = $('#hover');
 let hovLine = null;
-const entTip = id => { const e = ents[id]; if (!e) return esc(id); const k = kindOf(e.kind); return `<b>${esc(e.name)}</b>${code(id, e)} <span class="tag" style="color:${k.color}">${esc(k.label || e.kind)}</span>${e.badge ? ' ' + esc(e.badge) : ''}`; };
+const endName = (nid, pid) => `${esc(nameOf(nid))}${pid != null ? ` <span class="muted">${esc(portName(nid, pid))}</span>` : ''}`;
+const linkTip = l => `<div class="hl1">${esc(nameOf(l.a))} ${dirIcon(l)} ${esc(nameOf(l.b))}</div><div class="muted">${lineKinds(l).map(k => D.edgeKinds[k]?.label || k).filter(Boolean).map(esc).join(', ')} ${badge(l.members.length)}</div>`;
+const entTip = id => { const e = ents[id]; if (!e) return esc(id); const k = kindOf(e.kind); return `<div class="hl1">${esc(e.name)} ${code(id, e)}</div>${badge(k.label || e.kind, 'kind', 'color:' + k.color)} ${e.badge ? badge(e.badge) : ''}`; };
 function hover(e) {
-  const t = e.target.closest?.('[data-entity],[data-port],[data-tip]');
-  const line = t?.dataset.tip !== undefined ? t.previousElementSibling : null;
-  if (line !== hovLine) { hovLine?.classList.remove('hov'); hovLine = line; line?.classList.add('hov'); }
+  const g = e.target.closest?.('g.lk');
+  if (g !== hovLine) { hovLine?.classList.remove('hov'); hovLine = g; g?.classList.add('hov'); }
+  const t = g || e.target.closest?.('[data-entity],[data-port]');
   if (!t || drag || (t.dataset.entity === '' && t.dataset.port === undefined)) { hv.style.display = 'none'; return; }
-  const r = view.getBoundingClientRect();
-  if (t.dataset.tip !== undefined) hv.innerHTML = t.dataset.tip;
-  else if (t.dataset.port !== undefined) { const to = portTarget(t.dataset.node, t.dataset.port); hv.innerHTML = endTip(t.dataset.node, t.dataset.port) + (to ? ' → ' + endTip(to.node, to.port) : ` · ${esc(UI.noTarget)}`); }
+  if (g) hv.innerHTML = linkTip(L.links[+g.dataset.link]);
+  else if (t.dataset.port !== undefined) { const to = portTarget(t.dataset.node, t.dataset.port); hv.innerHTML = `<div class="hl1">${endName(t.dataset.node, t.dataset.port)} ${ic('right')} ${to ? endName(to.node, to.port) : esc(UI.noTarget)}</div>`; }
   else hv.innerHTML = entTip(t.dataset.entity);
+  const r = view.getBoundingClientRect();
   hv.style.display = 'block'; hv.style.left = (e.clientX - r.left + 14) + 'px'; hv.style.top = (e.clientY - r.top + 14) + 'px';
 }
 view.addEventListener('click', e => {
-  if (moved) return;
+  if (moved || e.target.closest('#zoom')) return;
+  const g = e.target.closest('g.lk');
+  if (g) return go('link', g.dataset.link);
   const t = e.target.closest('[data-entity],[data-port],.title,.node.plain');
-  if (!t) return;
+  if (!t) return clear();   // empty canvas, or the body of an imaged node
   if (t.dataset.port !== undefined) { const to = portTarget(t.dataset.node, t.dataset.port); if (to) go('node', to.node, true); }
   else if (t.dataset.entity) go('entity', t.dataset.entity);
-  else go('node', t.dataset.node || t.querySelector('.title')?.dataset.node);
+  else go('node', t.dataset.node);
 });
-document.addEventListener('click', e => { const t = e.target.closest('[data-go]'); if (t) { const [kind, ...rest] = t.dataset.go.split(':'); go(kind, rest.join(':'), true); } });
+addEventListener('keydown', e => { if (e.key === 'Escape' && document.activeElement !== q) clear(); });
+document.addEventListener('click', e => {
+  const t = e.target.closest('[data-go]'); if (!t || t.closest('#view')) return;
+  const [kind, ...rest] = t.dataset.go.split(':'); go(kind, rest.join(':'), true);
+});
 
 // ---------- side list and search ----------
 const list = $('#list'), q = $('#q');
-const nodeRow = id => `<div class="row" data-go="node:${esc(id)}"><span>${esc(nodes[id].name || id)}</span><span class="r">${esc(nodes[id].code ?? id)}</span></div>`;
-const entRow = id => { const e = ents[id], k = kindOf(e.kind); return `<div class="row" data-go="entity:${esc(id)}"><span>${esc(e.name)}${code(id, e)}</span><span class="tag" style="color:${k.color}">${esc(k.label || e.kind)}</span></div>`; };
+const nodeRow = id => row(`${esc(nodes[id].name || id)}`, code(id, nodes[id]), 'node:' + id, nodes[id].name || id);
+const entRow = id => { const e = ents[id], k = kindOf(e.kind); return row(`${esc(e.name)} ${code(id, e)}`, badge(k.label || e.kind, 'kind', 'color:' + k.color), 'entity:' + id, e.name); };
 function showList() {
   const s = q.value.trim().toLowerCase();
   if (!s) {
-    let h = `<div class="legend"><h3>${esc(UI.legend)}</h3>` + Object.values(D.kinds).map(k => `<div><span class="sw" style="background:${k.color}"></span>${esc(k.label)}</div>`).join('') +
-      Object.values(D.edgeKinds).map(k => `<div><span class="sw" style="background:${k.color && k.color !== 'auto' ? k.color : 'var(--dim)'}"></span>${esc(k.label)}</div>`).join('') + '</div>';
-    const order = Object.keys(L.nodes);
+    const legend = Object.values(D.kinds).map(k => row(`<span class="sw" style="background:${k.color}"></span> ${esc(k.label)}`)).join('') +
+      Object.values(D.edgeKinds).map(k => row(`<span class="sw" style="background:${k.color && k.color !== 'auto' ? k.color : 'var(--dim)'}"></span> ${esc(k.label)}`)).join('');
+    let h = sec(UI.legend, null, `<div class="legend">${legend}</div>`, false);
     for (const g of [...D.groups, { id: undefined, name: D.groups.length ? '—' : UI.nodes }]) {
       const ids = D.nodes.filter(n => n.group === g.id || (g.id === undefined && !D.groups.some(x => x.id === n.group))).map(n => n.id);
-      if (ids.length) h += `<h3 style="${g.color ? 'color:' + g.color : ''}">${esc(g.name ?? g.id)}</h3>` + ids.map(nodeRow).join('');
+      if (ids.length) h += sec(g.name ?? g.id, ids.length, ids.map(nodeRow).join(''), true);
     }
     list.innerHTML = h; return;
   }
   const hit = (...xs) => xs.some(x => x != null && String(x).toLowerCase().includes(s));
-  const ns = D.nodes.filter(n => hit(n.name, n.id, n.code, ...Object.values(n.files || {})));
+  const ns = D.nodes.filter(n => hit(n.name, n.id, n.code, ...Object.values(n.files || {}).flat()));
   const es = Object.entries(ents).filter(([id, e]) => hit(e.name, id, e.code, ...Object.values(e.files || {}).flat()));
-  let h = '';
-  if (ns.length) h += `<h3>${esc(UI.nodes)}</h3>` + ns.slice(0, 60).map(n => nodeRow(n.id)).join('');
-  if (es.length) h += `<h3>${esc(UI.entities)}</h3>` + es.slice(0, 200).map(([id]) => entRow(id)).join('');
+  const h = sec(UI.nodes, ns.length, ns.slice(0, 60).map(n => nodeRow(n.id)).join(''), true) + sec(UI.entities, es.length, es.slice(0, 200).map(([id]) => entRow(id)).join(''), true);
   list.innerHTML = h || `<p class="muted">${esc(UI.notFound)}</p>`;
 }
 q.oninput = showList;
 
 // ---------- detail ----------
-const info = $('#info');
-const link = id => nodes[id] ? `<span class="a" data-go="node:${esc(id)}">${esc(nodes[id].name || id)}</span>${code(id, nodes[id])}`
-  : ents[id] ? `<span class="a" data-go="entity:${esc(id)}">${esc(ents[id].name)}</span>${code(id, ents[id])}` : esc(id);
-const fieldsHtml = f => f && Object.keys(f).length ? '<div class="stat">' + Object.entries(f).map(([k, v]) => `<b>${esc(k)}</b><span>${esc(v)}</span>`).join('') + '</div>' : '';
+const info = $('#info'), phead = $('#phead');
+const link = id => nodes[id] ? `<span class="a" data-go="node:${esc(id)}">${esc(nodes[id].name || id)}</span> ${code(id, nodes[id])}`
+  : ents[id] ? `<span class="a" data-go="entity:${esc(id)}">${esc(ents[id].name)}</span> ${code(id, ents[id])}` : esc(id);
+const fieldsHtml = f => f && Object.keys(f).length ? '<div class="fields">' + Object.entries(f).map(([k, v]) => `<b>${esc(k)}</b><span>${esc(v)}</span>`).join('') + '</div>' : '';
 const filesHtml = f => {
   const rows = Object.entries(f || {}).filter(([, v]) => v != null && v !== '' && !(Array.isArray(v) && !v.length));
-  return rows.length ? `<h3>${esc(UI.files)}</h3><div class="stat files">` + rows.map(([k, v]) => `<b>${esc(k)}</b><span>${esc([].concat(v).join(', '))}</span>`).join('') + '</div>' : '';
+  return rows.length ? sec(UI.files, null, '<div class="fields files">' + rows.map(([k, v]) => `<b>${esc(k)}</b><span>${[].concat(v).map(esc).join('<br>')}</span>`).join('') + '</div>') : '';
 };
-const sectionsHtml = secs => (secs || []).map(s => `<h3>${esc(s.title)}${s.rows ? ` (${s.rows.filter(r => !r.heading).length})` : ''}</h3>` + (s.text ? `<p>${esc(s.text)}</p>` : '') +
-  (s.rows ? '<table>' + s.rows.map(r => r.heading ? `<tr class="grp"><td colspan="2">${esc(r.heading)}</td></tr>` : `<tr><td>${r.ref ? link(r.ref) : esc(r.text)}${r.note ? `<br><span class="muted">${esc(r.note)}</span>` : ''}</td><td class="n">${esc(r.value)}</td></tr>`).join('') + '</table>' : '')).join('');
+// rows under a { heading } become a branch of a tree
+const rowHtml = r => row(`${r.ref ? link(r.ref) : esc(r.text)}${r.note ? ` <span class="muted">${esc(r.note)}</span>` : ''}`, r.value != null && r.value !== '' ? badge(r.value) : '', '', r.ref ? nameOf(r.ref) : r.text);
+const sectionsHtml = secs => (secs || []).map(s => {
+  const rows = s.rows || [], n = rows.filter(r => !r.heading).length;
+  let body = s.text ? `<p>${esc(s.text)}</p>` : '';
+  if (rows.some(r => r.heading)) {
+    let cur = null; const groups = [];
+    for (const r of rows) { if (r.heading) groups.push(cur = { head: r.heading, rows: [] }); else if (cur) cur.rows.push(r); else groups.push(cur = { head: null, rows: [r] }); }
+    body += groups.map(g => g.head == null ? g.rows.map(rowHtml).join('') : tree(`<span class="name">${esc(g.head)}</span>${badge(g.rows.length)}`, g.rows.map(rowHtml).join(''), groups.length <= 3)).join('');
+  } else body += rows.map(rowHtml).join('');
+  return sec(s.title, rows.length ? n : null, body);
+}).join('');
 const refsHtml = id => {
   const rs = backrefs[id]; if (!rs?.length) return '';
   const by = {}; for (const r of rs) (by[r.section] ??= []).push(r);
-  return Object.entries(by).map(([sec, a]) => `<h3>${esc(UI.referencedBy)}: ${esc(sec)} (${a.length})</h3><table>` +
-    a.map(r => `<tr><td>${link(r.from)}${appears[r.from] ? `<br><span class="muted">${appears[r.from].map(w => link(w.node)).join(', ')}</span>` : ''}</td><td class="n">${esc(r.value)}</td></tr>`).join('') + '</table>').join('');
+  return Object.entries(by).map(([s, a]) => sec(`${UI.referencedBy}: ${s}`, a.length, a.map(r => appears[r.from]
+    ? tree(`<span class="name">${link(r.from)}</span>${badge(r.value)}`, appears[r.from].map(w => row(ic('pin') + ' ' + link(w.node))).join(''))
+    : row(link(r.from), badge(r.value))).join(''))).join('');
 };
-let sel = null, hl = [];
-function select(id) {
+const head = (kicker, title, sub = '', extra = '') => { phead.innerHTML = `<div class="kicker">${kicker}</div><h2 class="ptitle">${title}</h2>${sub ? `<div class="psub">${sub}</div>` : ''}${extra}`; };
+
+let sel = null, selLink = null, hl = [];
+function select(id, li = null) {
   if (sel) nodeEl[sel]?.classList.remove('sel');
   sel = id; if (id) nodeEl[id]?.classList.add('sel');
   hl.forEach(e => e.classList.remove('hl')); hl = [];
-  links.querySelectorAll('path.on').forEach(p => p.classList.remove('on'));
-  links.classList.toggle('picked', !!id);
-  if (id) links.querySelectorAll(`path[data-a="${CSS.escape(id)}"],path[data-b="${CSS.escape(id)}"]`).forEach(p => p.classList.add('on'));
+  links.querySelectorAll('g.lk.on').forEach(g => g.classList.remove('on'));
+  selLink = li;
+  links.classList.toggle('picked', !!id || li != null);
+  if (id) links.querySelectorAll(`g.lk[data-a="${CSS.escape(id)}"],g.lk[data-b="${CSS.escape(id)}"]`).forEach(g => g.classList.add('on'));
+  if (li != null) linkEl(li)?.classList.add('on');
+}
+function memberRow(m, fromEnd) {
+  const ek = D.edgeKinds[m.kind];
+  const a = m.from === fromEnd ? [m.from, m.fromPort, m.to, m.toPort] : [m.to, m.toPort, m.from, m.fromPort];
+  // ports name the doors / endpoints; without them the label says what travels this way
+  const ports = a[1] != null || a[3] != null ? `${esc(portName(a[0], a[1]) || nameOf(a[0]))} ${ic('right')} ${esc(portName(a[2], a[3]) || nameOf(a[2]))}` : '';
+  const text = ports ? ports + (m.label ? ` <span class="muted">${esc(m.label)}</span>` : '') : `${ic(m.both ? 'both' : 'right')} ${m.label ? esc(m.label) : esc(nameOf(a[2]))}`;
+  return row(text, ek?.label ? badge(ek.label) : '', '', m.label || '');
+}
+function showLink(i, focus) {
+  const l = L.links[i]; if (!l) return;
+  select(null, i); if (focus) focusLink(l);
+  const dir = l.fwd && l.back ? '↔' : l.fwd ? '→' : '←';
+  head(ic('line') + esc(UI.line), `${esc(nameOf(l.a))} ${dirIcon(l)} ${esc(nameOf(l.b))}`,
+    badge(dir, 'dir') + lineKinds(l).map(k => D.edgeKinds[k]?.label).filter(Boolean).map(t => badge(t)).join(''),
+    `<div class="btns"><button class="btn" data-go="end:${i}:a" title="${esc(nameOf(l.a))}">${ic('back')}<span>${esc(UI.goFrom)}</span></button><button class="btn" data-go="end:${i}:b" title="${esc(nameOf(l.b))}">${ic('jump')}<span>${esc(UI.goTo)}</span></button></div>`);
+  const outs = l.members.filter(m => m.both || m.from === l.a), ins = l.members.filter(m => m.both || m.from === l.b);
+  info.innerHTML = sec(`${UI.out} → ${nameOf(l.b)}`, outs.length, outs.map(m => memberRow(m, l.a)).join('')) +
+    sec(`${UI.in} ← ${nameOf(l.b)}`, ins.length, ins.map(m => memberRow(m, l.b)).join('')) +
+    sec(UI.nodes, 2, nodeRow(l.a) + nodeRow(l.b));
+}
+function goEnd(i, end) {
+  const l = L.links[i]; const id = end === 'a' ? l.a : l.b, pid = end === 'a' ? l.aPort : l.bPort;
+  showNode(id, false); centreOn(portPt(id, pid), Math.max(z, 0.5)); select(id);
+  history.replaceState(null, '', `#node=${encodeURIComponent(id)}`);
 }
 function showNode(id, focus) {
   const n = nodes[id]; select(id); if (focus) focusNode(id);
-  let h = `<h2>${esc(n.name || id)}${code(id, n)}</h2>` + fieldsHtml(n.fields) + filesHtml(n.files);
-  const conns = L.edges.filter(e => e.from === id || e.to === id);
-  if (conns.length) h += `<h3>${esc(UI.connections)} (${conns.length})</h3><table>` + conns.map(e => {
-    const out = e.from === id, other = out ? e.to : e.from, mine = out ? e.fromPort : e.toPort, theirs = out ? e.toPort : e.fromPort;
-    const ek = D.edgeKinds[e.kind];
-    return `<tr><td>${mine != null ? esc(n.ports.find(p => String(p.id) === String(mine))?.name ?? mine) : ''} ${e.both ? '↔' : out ? '→' : '←'} ${link(other)}${theirs != null ? ` <span class="muted">${esc(nodes[other].ports.find(p => String(p.id) === String(theirs))?.name ?? theirs)}</span>` : ''}</td><td class="n">${esc(ek?.label || '')}</td></tr>`;
-  }).join('') + '</table>';
+  const g = groupOf(n.group);
+  head(ic('node') + esc(UI.nodes), esc(n.name || id), code(id, n) + (g ? badge(g.name ?? g.id, 'kind', g.color ? 'color:' + g.color : '') : ''));
+  let h = sec(UI.details, null, fieldsHtml(n.fields)) + filesHtml(n.files);
+  // connections as a tree: the other node, then each door / call on that line
+  const ls = linksOf(id);
+  if (ls.length) h += sec(UI.connections, ls.length, ls.map(([l, i]) => {
+    const other = l.a === id ? l.b : l.a, out = l.a === id ? l.fwd : l.back, inn = l.a === id ? l.back : l.fwd;
+    const d = ic(out && inn ? 'both' : out ? 'right' : 'left');
+    return tree(`${d}<span class="name" title="${esc(nameOf(other))}">${link(other)}</span>${badge(l.members.length)}<span class="a" data-go="link:${i}" title="${esc(UI.line)}">${ic('line')}</span>`,
+      l.members.map(m => memberRow(m, id)).join(''));
+  }).join(''));
   const byKind = {};
   for (const m of n.markers) if (m.entity && ents[m.entity]) (byKind[m.kind] ??= []).push(m);
-  for (const [k, ms] of Object.entries(byKind)) h += `<h3>${esc(kindOf(k).label || k)} (${ms.length})</h3><table>` + ms.map(m => `<tr><td>${link(m.entity)}</td><td class="n">${esc(ents[m.entity].badge || '')} · ${m.points.length} ${esc(UI.points)}</td></tr>`).join('') + '</table>';
+  for (const [k, ms] of Object.entries(byKind)) h += sec(kindOf(k).label || k, ms.length, ms.map(m => row(link(m.entity), (ents[m.entity].badge ? badge(ents[m.entity].badge) : '') + (m.points.length > 1 ? badge('×' + m.points.length) : ''), '', ents[m.entity].name)).join(''));
   h += sectionsHtml(n.sections) + refsHtml(id);
   info.innerHTML = h;
 }
 function showEntity(id, focus) {
   const e = ents[id], k = kindOf(e.kind);
-  let h = `<h2>${esc(e.name)}${code(id, e)} <span class="tag" style="color:${k.color}">${esc(k.label || e.kind)}</span></h2>` + fieldsHtml(e.fields) + filesHtml(e.files);
+  head(ic('entity') + esc(k.label || e.kind), esc(e.name), code(id, e) + badge(k.label || e.kind, 'kind', 'color:' + k.color) + (e.badge ? badge(e.badge) : ''));
+  let h = sec(UI.details, null, fieldsHtml(e.fields)) + filesHtml(e.files);
   const w = appears[id] || [];
-  if (w.length) h += `<h3>${esc(UI.appearsIn)}</h3>` + w.map(x => `<div class="row" data-go="point:${esc(id)}@${esc(x.node)}"><span>${esc(nodes[x.node].name)}${code(x.node, nodes[x.node])}</span><span class="r">${x.n} ${esc(UI.points)}</span></div>`).join('');
+  if (w.length) h += sec(UI.appearsIn, w.length, w.map(x => row(`${ic('pin')} ${esc(nodes[x.node].name)} ${code(x.node, nodes[x.node])}`, x.n > 1 ? badge('×' + x.n) : '', `point:${id}@${x.node}`, nodes[x.node].name)).join(''));
   h += sectionsHtml(e.sections) + refsHtml(id);
   info.innerHTML = h;
   hl.forEach(m => m.classList.remove('hl')); hl = markEl[id] || []; hl.forEach(m => m.classList.add('hl'));
@@ -349,17 +489,22 @@ function point(eid, nid) {
 function go(kind, id, focus) {
   if (kind === 'node' && nodes[id]) showNode(id, focus);
   else if (kind === 'entity' && ents[id]) showEntity(id, focus);
+  else if (kind === 'link' && L.links[id]) showLink(+id, focus);
+  else if (kind === 'end') { const [i, end] = id.split(':'); return goEnd(+i, end); }
   else if (kind === 'point') { const [e, n] = id.split('@'); point(e, n); return; }
   else return;
   history.replaceState(null, '', `#${kind}=${encodeURIComponent(id)}`);
 }
+function home() {
+  head(ic('info') + esc(UI.overview), esc(D.title || 'Atlas'), badge(`${D.nodes.length} ${UI.nodes}`) + badge(`${L.links.length} ${UI.links}`) + badge(`${Object.keys(ents).length} ${UI.entities}`));
+  info.innerHTML = (D.description ? `<p>${esc(D.description)}</p>` : '') + `<p class="note">${esc(UI.hint)}</p>` +
+    (D.nodes.some(n => n.root) ? sec(UI.start, null, D.nodes.filter(n => n.root).map(n => nodeRow(n.id)).join('')) : '') + sec(UI.details, null, fieldsHtml(D.fields));
+}
+function clear() { select(null); home(); history.replaceState(null, '', location.pathname + location.search); }
 
 showList(); fitAll();
-const h0 = location.hash.match(/^#(node|entity)=(.+)$/);
-if (h0) go(h0[1], decodeURIComponent(h0[2]), true);
-else info.innerHTML = `<h2>${esc(D.title || 'Atlas')}</h2>` + (D.description ? `<p>${esc(D.description)}</p>` : '') +
-  `<p class="muted">${D.nodes.length} ${esc(UI.nodes)} · ${L.edges.length} ${esc(UI.connections)} · ${Object.keys(ents).length} ${esc(UI.entities)}</p><p>${esc(UI.hint)}</p>` +
-  (D.nodes.some(n => n.root) ? `<h3>${esc(UI.start)}</h3>` + D.nodes.filter(n => n.root).map(n => nodeRow(n.id)).join('') : '') + fieldsHtml(D.fields);
+const h0 = location.hash.match(/^#(node|entity|link)=(.+)$/);
+if (h0) go(h0[1], decodeURIComponent(h0[2]), true); else home();
 </script>
 </body>
 </html>

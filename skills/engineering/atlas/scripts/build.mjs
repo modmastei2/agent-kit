@@ -121,17 +121,36 @@ const unreached = [...nodes.keys()].filter(k => !order.has(k));
 if (roots.length && unreached.length) warns.push(`${unreached.length} node(s) not reached from the roots: ${unreached.slice(0, 8).join(', ')}${unreached.length > 8 ? ' ...' : ''}`);
 for (const k of [...nodes.values()].sort((a, b) => groupIndex(a.group) - groupIndex(b.group)).map(n => n.id)) bfs([k]);
 
-// one edge per pair of ends; an edge that has its reverse is drawn once, both ways
-const pairKey = (a, ap, b, bp) => [`${a}:${ap ?? ''}`, `${b}:${bp ?? ''}`].sort().join('|');
-const edges = [], seen = new Map();
+// one line per pair of nodes: every edge between the same two nodes becomes a member of it, and
+// the line shows which ways it goes ( a -> b, b -> a or both ) with arrowheads; its members
+// ( each door, call or route ) are listed when the line is clicked. a is the end nearer the roots
+const links = [], byPair = new Map();
 for (const e of data.edges) {
-  const k = pairKey(e.from, e.fromPort, e.to, e.toPort);
-  const prev = seen.get(k);
-  if (prev) { if (prev.from === e.to) prev.both = true; continue; }
-  let x = { ...e, both: e.both ?? false };
-  if (order.get(x.from) > order.get(x.to)) x = { ...x, from: e.to, fromPort: e.toPort, to: e.from, toPort: e.fromPort, flipped: true };
-  seen.set(k, x); edges.push(x);
+  const k = [e.from, e.to].sort().join('|');
+  let l = byPair.get(k);
+  if (!l) {
+    l = { a: e.from, b: e.to, members: [] };
+    if (order.get(l.a) > order.get(l.b)) [l.a, l.b] = [l.b, l.a];
+    byPair.set(k, l); links.push(l);
+  }
+  const rev = l.members.find(m => m.from === e.to && m.to === e.from && String(m.fromPort) === String(e.toPort) && String(m.toPort) === String(e.fromPort) && m.kind === e.kind && m.label === e.label);
+  if (rev) { rev.both = true; continue; }
+  if (l.members.some(m => m.from === e.from && String(m.fromPort) === String(e.fromPort) && String(m.toPort) === String(e.toPort) && m.kind === e.kind && m.label === e.label)) continue;
+  l.members.push({ from: e.from, fromPort: e.fromPort, to: e.to, toPort: e.toPort, kind: e.kind, label: e.label, both: !!e.both });
 }
+const portAt = (l, end) => { for (const m of l.members) { if (m.from === end && m.fromPort != null) return m.fromPort; if (m.to === end && m.toPort != null) return m.toPort; } return null; };
+for (const l of links) {
+  l.fwd = l.members.some(m => m.both || m.from === l.a);
+  l.back = l.members.some(m => m.both || m.from === l.b);
+  l.aPort = portAt(l, l.a); l.bPort = portAt(l, l.b);
+}
+
+// a node is one thing: two nodes with the same name, or a name that joins two subjects, splits
+// what a reader looks for across boxes
+const byName = new Map();
+for (const n of nodes.values()) { const k = String(n.name || n.id).trim().toLowerCase(); (byName.get(k) || byName.set(k, []).get(k)).push(n.id); }
+for (const [k, ids] of byName) if (ids.length > 1) warns.push(`${ids.length} nodes are named "${k}": ${ids.join(', ')} ( merge them, or name what makes each one different )`);
+for (const n of nodes.values()) if (/\s(&|and|\+)\s|\s\/\s/i.test(n.name || '')) warns.push(`node ${n.id} "${n.name}" names two subjects ( split it into two nodes )`);
 
 const portPos = (n, pid) => {
   const p = pid != null && n.ports.find(p => String(p.id) === String(pid));
@@ -150,11 +169,11 @@ const portId = (nid, pid, i) => {
   if (!m.has(key)) m.set(key, { id: `${nid}::${key}`, ...side(nodes.get(nid), portPos(nodes.get(nid), pid)) });
   return m.get(key).id;
 };
-const elkEdges = edges.map((e, i) => ({ id: `e${i}`, sources: [portId(e.from, e.fromPort, i + 'f')], targets: [portId(e.to, e.toPort, i + 't')] }));
+const elkEdges = links.map((l, i) => ({ id: `e${i}`, sources: [portId(l.a, l.aPort, i + 'f')], targets: [portId(l.b, l.bPort, i + 't')] }));
 
 if (checkOnly) {
   warns.forEach(w => console.warn('WARN:', w));
-  console.log(`ok: ${nodes.size} nodes, ${edges.length} edges, ${Object.keys(data.entities).length} entities${warns.length ? `, ${warns.length} warning(s)` : ''}`);
+  console.log(`ok: ${nodes.size} nodes, ${links.length} lines ( ${data.edges.length} edges ), ${Object.keys(data.entities).length} entities${warns.length ? `, ${warns.length} warning(s)` : ''}`);
   process.exit(0);
 }
 
@@ -195,14 +214,11 @@ try { out = await new ELK().layout(graph); }
 catch (e) { console.error('ERROR: ELK layout failed:', e.message); process.exit(1); }
 
 const PAD = 300;
-const layout = { nodes: {}, edges: [], size: [Math.round(out.width) + 2 * PAD, Math.round(out.height) + 2 * PAD] };
+const layout = { nodes: {}, links: [], size: [Math.round(out.width) + 2 * PAD, Math.round(out.height) + 2 * PAD] };
 for (const c of out.children) layout.nodes[c.id] = { x: Math.round(c.x + PAD), y: Math.round(c.y + PAD), w: c.width, h: c.height };
 out.edges.forEach((oe, i) => {
-  const e = edges[i];
-  let pts = (oe.sections || []).flatMap(s => [s.startPoint, ...(s.bendPoints || []), s.endPoint]).map(p => [Math.round(p.x + PAD), Math.round(p.y + PAD)]);
-  const ends = [e.from, e.fromPort, e.to, e.toPort];
-  if (e.flipped) { pts = pts.reverse(); [ends[0], ends[1], ends[2], ends[3]] = [e.to, e.toPort, e.from, e.fromPort]; }
-  layout.edges.push({ from: ends[0], fromPort: ends[1], to: ends[2], toPort: ends[3], kind: e.kind, label: e.label, both: e.both, pts });
+  const pts = (oe.sections || []).flatMap(s => [s.startPoint, ...(s.bendPoints || []), s.endPoint]).map(p => [Math.round(p.x + PAD), Math.round(p.y + PAD)]);
+  layout.links.push({ ...links[i], pts });
 });
 for (const n of nodes.values()) { delete n.w; delete n.h; }
 
@@ -213,4 +229,4 @@ const html = tpl.replace('/*__ATLAS__*/null', payload).replace('<title>Atlas</ti
 fs.mkdirSync(path.dirname(path.resolve(outArg)), { recursive: true });
 fs.writeFileSync(outArg, html);
 warns.forEach(w => console.warn('WARN:', w));
-console.log(`wrote ${outArg}: ${nodes.size} nodes, ${edges.length} edges, ${Object.keys(data.entities).length} entities, page ${layout.size[0]}x${layout.size[1]} px`);
+console.log(`wrote ${outArg}: ${nodes.size} nodes, ${links.length} lines ( ${data.edges.length} edges ), ${Object.keys(data.entities).length} entities, page ${layout.size[0]}x${layout.size[1]} px`);
