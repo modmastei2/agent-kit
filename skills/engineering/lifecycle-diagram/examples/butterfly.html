@@ -55,8 +55,8 @@ button:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--hl);outlin
 @media (min-width:720px){.wrap{padding:0 32px}}
 /* embed mode (DATA.embed or ?embed=1): the host page supplies the frame, title and theme */
 html.embed body{background:transparent}
-/* a frame whose color-scheme differs from its host gets an opaque backdrop; keep it see-through */
-html.embed{color-scheme:normal !important}
+/* the host sizes the frame from the reported height; a scrollbar meanwhile would narrow the page and re-flow it */
+html.embed{overflow:hidden}
 html.embed header.top,html.embed #themeBtn,html.embed .eyebrow{display:none}
 html.embed .wrap{max-width:none;padding:0}
 html.embed .head{padding-top:0}
@@ -100,13 +100,17 @@ h2{font-size:20px;margin:0 0 12px;line-height:1.3}
 .outdesc{color:var(--muted);font-size:14px;margin-top:4px;max-width:95ch}
 .outdesc:empty{display:none}
 
-.grid{display:grid;grid-template-columns:1fr;gap:12px;margin-top:12px}
+.grid{display:grid;grid-template-columns:minmax(0,1fr);gap:12px;margin-top:12px}
+/* a wide diagram scrolls inside its card, never the whole page */
+.grid>*{min-width:0}
 .card{background:var(--surface);border:1px solid var(--border);border-radius:10px}
 .diag{padding:10px}
 .diag .scroller{overflow-x:auto;-webkit-overflow-scrolling:touch}
 .diag svg{display:block;width:100%;min-width:980px;height:auto}
 /* legend: one row above the diagram, lines then box frames then effect dots */
-.legend{display:flex;flex-wrap:wrap;align-items:center;gap:8px 18px;margin-top:12px;font-size:13px;color:var(--muted)}
+.legend{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 32px;margin-top:12px;font-size:13px;color:var(--muted)}
+.lg-grp{display:flex;flex-wrap:wrap;align-items:center;gap:6px 16px}
+.lg-grp b{font-family:"IBM Plex Mono",monospace;font-size:11px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--faint)}
 .legend span{display:inline-flex;align-items:center;gap:6px}
 .lg-line{width:26px;height:0;border-top:2px solid}
 .lg-box{width:12px;height:12px;border-radius:4px;border:1.5px solid var(--border);background:var(--surface)}
@@ -553,6 +557,7 @@ const UI = Object.assign({
   tagsTitle:'How sure:', sources:'Sources', end:'END'
 }, D.ui || {});
 UI.legend = Object.assign({main:'Main path', cancel:'Cancel / failure', ret:'Reversal / return', exc:'Exception', back:'Goes back'}, (D.ui||{}).legend || {});
+UI.legendTitles = Object.assign({lines:'Lines', boxes:'Statuses', effects:UI.effectLabel}, (D.ui||{}).legendTitles || {});
 UI.kinds = Object.assign({start:'Start', main:'In progress', side:'Side state', ok:'Ends · success', cancel:'Ends · cancelled', cancelMid:'Cancelling', ret:'Reversal / return', exc:'Exception'}, (D.ui||{}).kinds || {});
 const TAG = Object.assign({doc:'Official docs', repo:'Verified', unv:'Unverified', gen:'General knowledge'}, D.tags || {});
 const TAGDESC = Object.assign({doc:'read in official documentation', repo:'proven by working code, tests or a sandbox', unv:'a source says it is unconfirmed', gen:'not checked against a source'}, D.tagDesc || {});
@@ -610,9 +615,13 @@ const usedKinds = new Set(D.edges.map(e => e.kind || 'main'));
 const usedBoxes = new Set(D.nodes.map(n => n.kind || 'main'));
 const lineStyle = {main:'', cancel:'', ret:'', exc:';border-top-style:dashed', back:';border-top-style:dotted'};
 const lineColor = {main:'--muted', cancel:'--cancel', ret:'--ret', exc:'--exc', back:'--back'};
-$('#legend').innerHTML = ['main','cancel','ret','exc','back'].filter(k => usedKinds.has(k)).map(k => `<span><i class="lg-line" style="border-color:var(${lineColor[k]})${lineStyle[k]}"></i>${esc(UI.legend[k])}</span>`).join('')
-  + ['start','main','side','ok','cancel','ret','exc'].filter(k => usedBoxes.has(k)).map(k => `<span><i class="lg-box k-${k}"></i>${esc(UI.kinds[k])}</span>`).join('')
-  + (EFF ? Object.values(EFF).map(e => `<span><i class="lg-dot tn-${e.tone||'gray'}"></i>${esc(e.label)}</span>`).join('') : '');
+// a cancel frame only claims "ends" when one of the page's cancel states really is an end
+const boxLabel = k => k === 'cancel' && !D.nodes.some(n => n.kind === 'cancel' && isEnd(n)) ? UI.kinds.cancelMid : UI.kinds[k];
+const group = (title, items) => items.length ? `<div class="lg-grp"><b>${esc(title)}</b>${items.join('')}</div>` : '';
+$('#legend').innerHTML =
+  group(UI.legendTitles.lines, ['main','cancel','ret','exc','back'].filter(k => usedKinds.has(k)).map(k => `<span><i class="lg-line" style="border-color:var(${lineColor[k]})${lineStyle[k]}"></i>${esc(UI.legend[k])}</span>`))
+  + group(UI.legendTitles.boxes, ['start','main','side','ok','cancel','ret','exc'].filter(k => usedBoxes.has(k)).map(k => `<span><i class="lg-box k-${k}"></i>${esc(boxLabel(k))}</span>`))
+  + group(UI.legendTitles.effects, EFF ? Object.values(EFF).map(e => `<span><i class="lg-dot tn-${e.tone||'gray'}"></i>${esc(e.label)}</span>`) : []);
 
 /* svg */
 const svg = $('#svg');

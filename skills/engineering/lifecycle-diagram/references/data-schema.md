@@ -34,7 +34,7 @@ draws its own icons. Arrows such as → are ordinary text and fine, in `raw` or 
 | `rows` | Label per diagram row, top to bottom |
 | `effects` | `{key: {label, tone}}` — optional side effect per status, shown as a dot; tone ∈ blue, green, gray, amber, red, purple |
 | `actors` | `{key: label}` — labels for `who`; there are no built-ins |
-| `ui` | Overrides for built-in labels (see the `UI` object at the top of the template script), e.g. `eyebrow`, `outTitle`, `noPath`, `apis`, `webhook`, `basicsTitle`, `mapTitle`, `mappedLabel`, `effectLabel`, `legend:{main,cancel,ret,exc,back}`, `kinds:{…}` |
+| `ui` | Overrides for built-in labels (see the `UI` object at the top of the template script), e.g. `eyebrow`, `outTitle`, `noPath`, `apis`, `webhook`, `basicsTitle`, `mapTitle`, `mappedLabel`, `effectLabel`, `legend:{main,cancel,ret,exc,back}`, `legendTitles:{lines,boxes,effects}`, `kinds:{start,main,side,ok,cancel,cancelMid,ret,exc}` (`cancelMid` names a cancel state that still leads on, in the panel and, when no cancel state ends the page, in the legend) |
 | `tags`, `tagDesc` | Overrides for tag labels and their descriptions in the footer |
 | `basics` | `[{title, tag, body(html), code, codeLabel}]` — "before your first call" cards; omit to hide |
 | `mapTable` | `false` hides the status table |
@@ -149,11 +149,22 @@ e.g. an iframe in a training site. The page then:
   from the host whenever the host switches;
 - reports its height to the host after every resize, so the iframe needs no scrollbar:
 
+- uses the colour scheme of the theme it shows. A browser paints an opaque backdrop behind a
+  frame whose colour scheme differs from the iframe element's, so set the iframe's
+  `color-scheme` to the theme you send:
+
 ```js
+const setFrameTheme = theme => {            // 'light' | 'dark'
+  frame.style.colorScheme = theme;          // keeps the frame see-through
+  frame.contentWindow.postMessage({ theme }, '*');
+};
+frame.addEventListener('load', () => setFrameTheme(hostTheme));
 addEventListener('message', e => {
   if (e.data?.type === 'lifecycle-diagram:height' && e.source === frame.contentWindow) frame.style.height = e.data.height + 'px';
 });
 ```
+
+`screenshot.mjs` gives an embed-mode page its theme's background, as a host would.
 
 ## Layout
 
