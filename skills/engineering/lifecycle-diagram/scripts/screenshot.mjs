@@ -35,10 +35,12 @@ let target = path.resolve(page);
 const outcome = opt('--outcome'), node = opt('--node');
 const clean = s => String(s).replace(/["\\]/g, '');
 let tmp;
-if (outcome || node) {
-  // copy the page with a small script that clicks the scenario and/or the node
+{
+  // copy the page with a small script that clicks the scenario and/or the node; an embed-mode
+  // page is see-through, so give it its theme's background as a host page would
   tmp = path.join(path.dirname(target), `.__shot_${process.pid}.html`);
-  const js = (outcome ? `document.querySelector('.out[data-id="${clean(outcome)}"]')?.click();` : '') +
+  const js = `if (document.documentElement.classList.contains('embed')) document.body.style.background = 'var(--bg)';` +
+    (outcome ? `document.querySelector('.out[data-id="${clean(outcome)}"]')?.click();` : '') +
     (node ? (outcome ? `document.querySelector('.step[data-id="${clean(node)}"]')?.click();` : `document.querySelector('.node[data-id="${clean(node)}"]')?.dispatchEvent(new Event('click'));`) : '') +
     // a user-style click may smooth-scroll to the panel; pin the viewport back to the top
     `setTimeout(() => scrollTo({top: 0, behavior: 'instant'}), 300);`;
