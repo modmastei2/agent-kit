@@ -53,6 +53,14 @@ button:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--hl);outlin
 .ic{width:1.1em;height:1.1em;flex:none;vertical-align:-.18em}
 .wrap{max-width:1400px;margin:0 auto;padding:0 16px}
 @media (min-width:720px){.wrap{padding:0 32px}}
+/* embed mode (DATA.embed or ?embed=1): the host page supplies the frame, title and theme */
+html.embed body{background:transparent}
+/* a frame whose color-scheme differs from its host gets an opaque backdrop; keep it see-through */
+html.embed{color-scheme:normal !important}
+html.embed header.top,html.embed #themeBtn,html.embed .eyebrow{display:none}
+html.embed .wrap{max-width:none;padding:0}
+html.embed .head{padding-top:0}
+html.embed footer{padding-bottom:4px}
 
 /* header: one bar, the same colour as the page */
 header.top{border-bottom:1px solid var(--border)}
@@ -94,12 +102,20 @@ h2{font-size:20px;margin:0 0 12px;line-height:1.3}
 
 .grid{display:grid;grid-template-columns:1fr;gap:12px;margin-top:12px}
 .card{background:var(--surface);border:1px solid var(--border);border-radius:10px}
-.diag{padding:10px 10px 4px}
+.diag{padding:10px}
 .diag .scroller{overflow-x:auto;-webkit-overflow-scrolling:touch}
 .diag svg{display:block;width:100%;min-width:980px;height:auto}
-.legend{display:flex;flex-wrap:wrap;gap:8px 18px;padding:8px 8px 6px;border-top:1px solid var(--border-soft);margin-top:4px;font-size:13px;color:var(--muted)}
+/* legend: one row above the diagram, lines then box frames then effect dots */
+.legend{display:flex;flex-wrap:wrap;align-items:center;gap:8px 18px;margin-top:12px;font-size:13px;color:var(--muted)}
 .legend span{display:inline-flex;align-items:center;gap:6px}
-.lg-line{width:24px;height:0;border-top:2px solid}
+.lg-line{width:26px;height:0;border-top:2px solid}
+.lg-box{width:12px;height:12px;border-radius:4px;border:1.5px solid var(--border);background:var(--surface)}
+.lg-box.k-start{border:2px solid var(--brand)}
+.lg-box.k-side{border-style:dashed;background:transparent}
+.lg-box.k-ok{background:var(--ok-bg);border-color:var(--ok)}
+.lg-box.k-cancel{background:var(--cancel-bg);border-color:var(--cancel);border-style:dashed}
+.lg-box.k-ret{background:var(--ret-bg);border-color:var(--ret)}
+.lg-box.k-exc{background:var(--exc-bg);border-color:var(--exc);border-style:dashed}
 .lg-dot{width:9px;height:9px;border-radius:50%}
 
 /* diagram */
@@ -116,13 +132,14 @@ h2{font-size:20px;margin:0 0 12px;line-height:1.3}
 .node .nc{font-family:"IBM Plex Mono",monospace;font-weight:600;font-size:12.5px;fill:var(--text);text-anchor:middle}
 .node .nl{font-size:11.5px;fill:var(--muted);text-anchor:middle}
 .node .dot{stroke:var(--surface);stroke-width:1.5}
-.node .tm{font-family:"IBM Plex Mono",monospace;font-size:9.5px;font-weight:600;letter-spacing:.06em;text-anchor:start}
+.node .tm{font-family:"IBM Plex Mono",monospace;font-size:9.5px;font-weight:600;letter-spacing:.06em;text-anchor:start;fill:var(--muted)}
 .k-ok .tm{fill:var(--ok)} .k-cancel .tm{fill:var(--cancel)} .k-ret .tm{fill:var(--ret)} .k-exc .tm{fill:var(--exc)}
 .tn-blue{--tn:var(--t-blue)} .tn-green{--tn:var(--t-green)} .tn-gray{--tn:var(--t-gray)} .tn-amber{--tn:var(--t-amber)} .tn-red{--tn:var(--t-red)} .tn-purple{--tn:var(--t-purple)}
 .dot[class*="tn-"]{fill:var(--tn)} .lg-dot[class*="tn-"]{background:var(--tn)}
 .edge path{fill:none;stroke-width:1.6;transition:opacity .2s,stroke-width .2s}
 .e-main path{stroke:var(--muted)} .e-cancel path{stroke:var(--cancel)} .e-ret path{stroke:var(--ret)} .e-exc path{stroke:var(--exc);stroke-dasharray:5 4} .e-back path{stroke:var(--back);stroke-dasharray:2 4}
 .edge text{font-family:"IBM Plex Mono",monospace;font-size:10.5px;font-weight:500;fill:var(--muted);text-anchor:middle;paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round;transition:opacity .2s}
+.edge .lbg{fill:var(--surface)}
 .mk-main{fill:var(--muted)} .mk-cancel{fill:var(--cancel)} .mk-ret{fill:var(--ret)} .mk-exc{fill:var(--exc)} .mk-back{fill:var(--back)}
 /* focus: a scenario or a clicked status lights its nodes and lines and fades the rest */
 svg.dim .node:not(.on) .nb, svg.dim .node:not(.on) text, svg.dim .node:not(.on) .dot{opacity:.3}
@@ -220,10 +237,10 @@ footer ul{padding-left:18px;margin:6px 0 0}
     <div class="outs" id="outs"></div>
     <div class="steps" id="steps"></div>
     <div class="outdesc" id="outdesc"></div>
+    <div class="legend" id="legend"></div>
     <div class="grid">
       <div class="card diag">
         <div class="scroller"><svg id="svg" role="img"></svg></div>
-        <div class="legend" id="legend"></div>
       </div>
       <aside class="card panel" id="panel" aria-live="polite"></aside>
     </div>
@@ -245,12 +262,43 @@ footer ul{padding-left:18px;margin:6px 0 0}
 //
 // Placement is automatic: a node without `row` goes to the row its kind belongs to, and a
 // node without `col` is placed from the edges (main path left to right, side and branch
-// states under the states they leave from). `col`/`row` on a node always win.
+// states under the states they leave from). `col`/`row`/`colW` set in the data always win.
 const KIND_ROW = { start: 0, main: 0, ok: 0, side: 1, exc: 1, cancel: 2, ret: 2 };
+
+// rough rendered width of an edge label at 10.5px: Latin ~6px a character, other scripts
+// wider; combining marks (Thai vowels and tones, accents) take no width
+function labelWidth(s) {
+  let w = 6;
+  for (const ch of String(s || '').replace(/\p{M}/gu, '')) w += ch.charCodeAt(0) < 0x250 ? 6 : 7;
+  return w;
+}
+
+// forward edges without loops: `back` edges are ignored, and any other edge that closes a
+// loop (found walking from the start, scenario paths first) is treated as going back
+function forwardEdges(D, byId) {
+  const cand = D.edges.filter(e => (e.kind || 'main') !== 'back' && byId[e.from] && byId[e.to] && e.from !== e.to);
+  const order = [];
+  const longest = [...(D.outcomes || [])].sort((a, b) => (b.path || []).length - (a.path || []).length);
+  for (const o of longest) for (const id of o.path || []) if (byId[id] && !order.includes(id)) order.push(id);
+  const roots = [...D.nodes.filter(n => n.kind === 'start').map(n => n.id), ...order, ...D.nodes.map(n => n.id)];
+  const prio = id => { const i = order.indexOf(id); return i < 0 ? 1e9 : i; };
+  const state = {}, keep = new Set();
+  const visit = id => {
+    state[id] = 1;
+    for (const e of cand.filter(x => x.from === id).sort((a, b) => prio(a.to) - prio(b.to))) {
+      if (state[e.to] === 1) continue;           // closes a loop
+      keep.add(e);
+      if (!state[e.to]) visit(e.to);
+    }
+    state[id] = 2;
+  };
+  for (const id of roots) if (!state[id]) visit(id);
+  return cand.filter(e => keep.has(e));
+}
 
 function autoPlace(D) {
   const nodes = D.nodes, byId = Object.fromEntries(nodes.map(n => [n.id, n]));
-  const fwd = D.edges.filter(e => (e.kind || 'main') !== 'back' && byId[e.from] && byId[e.to] && e.from !== e.to);
+  const fwd = forwardEdges(D, byId);
   // rows: by kind, then close the gaps so an unused row leaves no empty band
   const autoRow = nodes.filter(n => typeof n.row !== 'number');
   autoRow.forEach(n => { n.row = KIND_ROW[n.kind || 'main'] ?? 0; });
@@ -259,7 +307,8 @@ function autoPlace(D) {
     autoRow.forEach(n => { n.row = used.indexOf(n.row); });
   }
   if (nodes.every(n => typeof n.col === 'number')) return;
-  // rank = longest path from a node with no incoming forward edge (bounded, so cycles stop)
+  // rank = longest path from the start over the loop-free edges, so a shortcut never
+  // pulls a later state forward
   const rank = Object.fromEntries(nodes.map(n => [n.id, 0]));
   for (let pass = 0; pass < nodes.length; pass++) {
     let changed = false;
@@ -293,23 +342,32 @@ function autoPlace(D) {
 function makeLayout(D) {
   D.nodes.forEach(n => { if (typeof n.col !== 'number') n._auto = true; });
   autoPlace(D);
-  const NW = D.nodeW || 156, NH = 56, CW = D.colW || 215, RH = D.rowH || 122, PAD = 22;
+  const NW = D.nodeW || 156, NH = 56, RH = D.rowH || 122, PAD = 22;
   const byId = Object.fromEntries(D.nodes.map(n => [n.id, n]));
-  // default sides: a same-row edge that skips a column or runs backwards arcs over the row
-  // (under it, below the first row) instead of cutting through the boxes in between
+  const between = (A, B) => D.nodes.some(n => n !== A && n !== B && n.row === A.row && n.col > Math.min(A.col, B.col) && n.col < Math.max(A.col, B.col));
+  // default sides: same-row neighbours connect straight (either direction); a same-row edge
+  // with a box in the way arcs over the row, or under it for any row but the first
   function sides(e) {
     const A = byId[e.from], B = byId[e.to];
     let fs = e.fs, ts = e.ts;
     if (fs && ts) return [fs, ts, false];
     let arc = false;
     if (A.row === B.row) {
-      const dc = B.col - A.col;
-      if (dc > 1.3 || dc < 0) { arc = true; const s = A.row === 0 ? 't' : 'b'; fs = fs || s; ts = ts || s; }
-      else if (dc >= 0) { fs = fs || 'r'; ts = ts || 'l'; } else { fs = fs || 'l'; ts = ts || 'r'; }
+      if (between(A, B)) { arc = true; const s = A.row === firstRow ? 't' : 'b'; fs = fs || s; ts = ts || s; }
+      else if (B.col >= A.col) { fs = fs || 'r'; ts = ts || 'l'; } else { fs = fs || 'l'; ts = ts || 'r'; }
     } else if (B.row > A.row) { fs = fs || 'b'; ts = ts || 't'; } else { fs = fs || 't'; ts = ts || 'b'; }
     return [fs, ts, arc];
   }
   const firstRow = Math.min(...D.nodes.map(n => n.row));
+  // column width: wide enough for the longest label sitting between two neighbours in a row
+  let CW = D.colW || 215;
+  if (!D.colW) for (const e of D.edges) {
+    const A = byId[e.from], B = byId[e.to];
+    if (!A || !B || !e.label || A.row !== B.row || e.fs || e.ts) continue;
+    const [fs, , arc] = sides(e);
+    const dc = Math.abs(B.col - A.col);
+    if (!arc && (fs === 'r' || fs === 'l') && dc > 0) CW = Math.max(CW, Math.ceil((NW + labelWidth(e.label) + 18) / dc));
+  }
   const topArcs = D.edges.some(e => byId[e.from] && byId[e.to] && byId[e.from].row === firstRow && sides(e)[0] === 't' && sides(e)[1] === 't');
   const TOP = D.top || (topArcs ? 78 : 30);
   function box(n) {
@@ -326,29 +384,35 @@ function makeLayout(D) {
   function edgeGeom(e) {
     const A = box(byId[e.from]), B = box(byId[e.to]);
     const [fs, ts, arc] = sides(e);
-    // a pair of opposite edges between the same two states runs side by side, not on top of each other
-    let fo = e.fo, to_ = e.to_;
+    // a pair of opposite edges between the same two states runs side by side, labels outside
+    let fo = e.fo, to_ = e.to_, lxAuto = 0, lyAuto = 0;
     const rev = D.edges.find(o => o.from === e.to && o.to === e.from);
     if (rev && !arc && !sides(rev)[2] && [e.fs, e.ts, e.fo, e.to_, rev.fs, rev.ts, rev.fo, rev.to_].every(v => v == null)) {
-      const off = (e.from < e.to ? 1 : -1) * (fs === 't' || fs === 'b' ? 24 : 10);
-      fo = off; to_ = off;
+      const sign = e.from < e.to ? 1 : -1, vertical = fs === 't' || fs === 'b';
+      fo = to_ = sign * (vertical ? 24 : 10);
+      if (vertical) lxAuto = sign * (labelWidth(e.label) / 2 + 4); else lyAuto = sign * 9;
     }
     const [x1, y1, dx1, dy1] = anchor(A, fs, fo);
     const [x2, y2, dx2, dy2] = anchor(B, ts, to_);
     const dist = Math.hypot(x2 - x1, y2 - y1);
-    // an automatic arc rises with its span but stays inside the space above the row
-    const k = e.k || (arc ? Math.min(TOP - 12, 28 + dist * 0.07) / 0.75 : Math.max(26, Math.min(110, dist * .42)));
+    // an automatic arc rises with its span; over the first row it stays inside the space above it
+    const k = e.k || (arc ? (fs === 't' ? Math.min(TOP - 12, 28 + dist * 0.07) : 28 + dist * 0.07) / 0.75 : Math.max(26, Math.min(110, dist * .42)));
     const c1 = [x1 + dx1 * k, y1 + dy1 * k], c2 = [x2 + dx2 * (k + 6), y2 + dy2 * (k + 6)];
     const ex = x2 + dx2 * 3, ey = y2 + dy2 * 3;
     const pts = [[x1, y1], c1, c2, [ex, ey]];
     const at = t => { const u = 1 - t; return [0, 1].map(i => u*u*u*pts[0][i] + 3*u*u*t*pts[1][i] + 3*u*t*t*pts[2][i] + t*t*t*pts[3][i]); };
     const mid = at(.5);
-    return { d: `M${x1},${y1} C${c1[0]},${c1[1]} ${c2[0]},${c2[1]} ${ex},${ey}`, mx: mid[0] + (e.lx || 0), my: mid[1] + (e.ly || 0), at };
+    return { d: `M${x1},${y1} C${c1[0]},${c1[1]} ${c2[0]},${c2[1]} ${ex},${ey}`, mx: mid[0] + (e.lx ?? lxAuto), my: mid[1] + (e.ly ?? lyAuto), at };
   }
-  // rough rendered width of an edge label at 10.5px; combining marks (any script) take no width
-  function labelWidth(s) { return String(s || '').replace(/\p{M}/gu, '').length * 6 + 6; }
+  // the canvas grows to hold every box, line and label (an arc under the last row included)
   const maxCol = Math.max(...D.nodes.map(n => n.col)), maxRow = Math.max(...D.nodes.map(n => n.row));
-  const W = PAD * 2 + maxCol * CW + NW + 20, H = TOP + maxRow * RH + NH + 24;
+  let W = PAD * 2 + maxCol * CW + NW + 20, H = TOP + maxRow * RH + NH + 24;
+  for (const e of D.edges) {
+    if (!byId[e.from] || !byId[e.to]) continue;
+    const g = edgeGeom(e);
+    for (let t = 0; t <= 1.0001; t += 0.05) { const p = g.at(t); W = Math.max(W, p[0] + 12); H = Math.max(H, p[1] + 12); }
+    if (e.label) { W = Math.max(W, g.mx + labelWidth(e.label) / 2 + 8); H = Math.max(H, g.my + 14); }
+  }
   return { NW, NH, CW, RH, PAD, TOP, W, H, byId, box, edgeGeom, labelWidth };
 }
 if (typeof module !== 'undefined') module.exports = { makeLayout };
@@ -505,9 +569,16 @@ const { byId, box, edgeGeom } = L;
 const isEnd = n => n.end ?? (['ok','cancel'].includes(n.kind) && !D.edges.some(e => e.from === n.id && e.kind !== 'back'));
 const label = n => n.code || n.raw;
 
-/* theme */
+/* theme and embed mode */
 const root = document.documentElement;
-try { const t = localStorage.getItem('lcd-theme'); if (t) root.dataset.theme = t; } catch(e){}
+const params = new URLSearchParams(location.search);
+const EMBED = !!D.embed || (params.has('embed') && params.get('embed') !== '0');
+root.classList.toggle('embed', EMBED);
+const setTheme = t => { if (t === 'light' || t === 'dark') root.dataset.theme = t; else if (t === 'auto') delete root.dataset.theme; };
+// a standalone page remembers the reader's choice; an embedded one follows its host page
+// (a srcdoc frame shares the host's storage, so it must not read or write the saved choice)
+if (!EMBED) { try { setTheme(localStorage.getItem('lcd-theme')); } catch(e){} }
+if (params.has('theme')) setTheme(params.get('theme'));
 const isDark = () => root.dataset.theme ? root.dataset.theme === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
 
 /* header */
@@ -518,20 +589,29 @@ const themeIcon = () => { $('#themeBtn').innerHTML = icon(isDark() ? 'sun' : 'mo
 themeIcon();
 $('#themeBtn').onclick = () => {
   root.dataset.theme = isDark() ? 'light' : 'dark';
-  try { localStorage.setItem('lcd-theme', root.dataset.theme); } catch(e){}
+  if (!EMBED) { try { localStorage.setItem('lcd-theme', root.dataset.theme); } catch(e){} }
   themeIcon();
 };
+if (EMBED && window.parent !== window) {
+  // host to page: postMessage({theme:'light'|'dark'|'auto'}); page to host: {type, height} on every resize
+  addEventListener('message', ev => { const m = ev.data; if (m && typeof m === 'object' && 'theme' in m) { setTheme(m.theme); themeIcon(); } });
+  const postHeight = () => parent.postMessage({type:'lifecycle-diagram:height', height: Math.ceil(document.documentElement.getBoundingClientRect().height)}, '*');
+  if (window.ResizeObserver) new ResizeObserver(postHeight).observe(document.documentElement);
+  addEventListener('load', postHeight);
+}
 $('#eyebrow').textContent = D.eyebrow ?? UI.eyebrow;
 $('#h1').textContent = D.name;
 $('#lead').innerHTML = D.lead || '';
 $('#outTitle').textContent = UI.outTitle;
 $('#svg').setAttribute('aria-label', D.name);
 
-/* legend */
+/* legend: only the line styles, box frames and effects this page uses */
 const usedKinds = new Set(D.edges.map(e => e.kind || 'main'));
+const usedBoxes = new Set(D.nodes.map(n => n.kind || 'main'));
 const lineStyle = {main:'', cancel:'', ret:'', exc:';border-top-style:dashed', back:';border-top-style:dotted'};
 const lineColor = {main:'--muted', cancel:'--cancel', ret:'--ret', exc:'--exc', back:'--back'};
 $('#legend').innerHTML = ['main','cancel','ret','exc','back'].filter(k => usedKinds.has(k)).map(k => `<span><i class="lg-line" style="border-color:var(${lineColor[k]})${lineStyle[k]}"></i>${esc(UI.legend[k])}</span>`).join('')
+  + ['start','main','side','ok','cancel','ret','exc'].filter(k => usedBoxes.has(k)).map(k => `<span><i class="lg-box k-${k}"></i>${esc(UI.kinds[k])}</span>`).join('')
   + (EFF ? Object.values(EFF).map(e => `<span><i class="lg-dot tn-${e.tone||'gray'}"></i>${esc(e.label)}</span>`).join('') : '');
 
 /* svg */
@@ -541,19 +621,29 @@ let s = `<defs>${['main','cancel','ret','exc','back'].map(k => `<marker id="ar-$
 (D.rows||[]).forEach((r,i) => { if (i>0){ const y = L.TOP + i*L.RH - 18; s += `<line class="rowline" x1="8" x2="${L.W-8}" y1="${y}" y2="${y}"/>`; } });
 D.edges.forEach((e,i) => {
   const g = edgeGeom(e); const kind = e.kind || 'main';
-  s += `<g class="edge e-${kind}" data-i="${i}"><path d="${g.d}" marker-end="url(#ar-${kind})"/>${e.label ? `<text x="${g.mx}" y="${g.my+3.5}">${esc(e.label)}</text>` : ''}</g>`;
+  s += `<g class="edge e-${kind}" data-i="${i}"><path d="${g.d}" marker-end="url(#ar-${kind})"/>${e.label ? `<rect class="lbg" rx="3"/><text x="${g.mx}" y="${g.my+3.5}">${esc(e.label)}</text>` : ''}</g>`;
 });
 (D.rows||[]).forEach((r,i) => { s += `<text class="rowlab" x="10" y="${L.TOP + i*L.RH - 8}">${esc(r)}</text>`; });
 D.nodes.forEach(n => {
   const b = box(n); const kind = n.kind || 'main'; const ef = effOf(n);
   s += `<g class="node k-${kind}" data-id="${esc(n.id)}" tabindex="0" role="button" aria-label="${esc(n.raw)} ${esc(n.short)}">
     <rect class="nb" x="${b.x}" y="${b.y}" width="${b.w}" height="${b.h}" rx="9"/>
-    ${isEnd(n) ? `<text class="tm" x="${b.x+8}" y="${b.y+13}">${esc(UI.end)}</text>` : ''}
+    ${isEnd(n) ? `<text class="tm" x="${b.x+8}" y="${b.y+15}">${esc(UI.end)}</text>` : ''}
     ${ef ? `<circle class="dot tn-${ef.tone||'gray'}" cx="${b.x+b.w-11}" cy="${b.y+11}" r="4.5"/>` : ''}
     <text class="nc" x="${b.cx}" y="${b.y+27}">${esc(label(n))}</text>
     <text class="nl" x="${b.cx}" y="${b.y+44}">${esc(n.short)}</text></g>`;
 });
 svg.innerHTML = s;
+// a solid backing sized to each rendered label, so the line never shows through its spaces
+function fitLabels(){
+  svg.querySelectorAll('.edge').forEach(g => {
+    const t = g.querySelector('text'), r = g.querySelector('.lbg'); if (!t) return;
+    const b = t.getBBox();
+    r.setAttribute('x', b.x - 3); r.setAttribute('y', b.y); r.setAttribute('width', b.width + 6); r.setAttribute('height', b.height);
+  });
+}
+fitLabels();
+if (document.fonts) document.fonts.ready.then(fitLabels);
 
 /* ---- focus: one scenario, or one status with everything wired to it ---- */
 let focus = null;   // {outcome} | {node}

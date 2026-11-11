@@ -17,7 +17,7 @@ The embedded block can also be edited in the page itself: add a node and its edg
 Fields marked * are required. Fields marked html accept HTML; everything else is escaped.
 Write every human-readable field in the reader's language, in plain words; keep raw values,
 codes and proper names verbatim. No emoji or symbol glyphs (the linter warns): the template
-draws its own icons.
+draws its own icons. Arrows such as → are ordinary text and fine, in `raw` or in prose.
 
 ## Page
 
@@ -26,6 +26,7 @@ draws its own icons.
 | `name`* | Subject of the page, the heading |
 | `title` | Browser tab title; defaults to `name` |
 | `eyebrow` | Small label above the heading (default `ui.eyebrow`, `Lifecycle`) |
+| `embed` | `true` builds the page for an iframe inside another page (same as opening it with `?embed=1`); see Embedding |
 | `lang` | `<html lang>` (default `en`) — set it to the page's language |
 | `accent` | `{light, dark}` hex colours for links, the start node and tags; `dark` is a lighter tint |
 | `lead` (html) | Optional, one sentence: what one "thing" is, or the one trap to know before reading the diagram, or that the page is unverified. Everything else goes on the status it concerns |
@@ -38,10 +39,10 @@ draws its own icons.
 | `basics` | `[{title, tag, body(html), code, codeLabel}]` — "before your first call" cards; omit to hide |
 | `mapTable` | `false` hides the status table |
 | `sources` (html list) | Provenance, folded away in the footer |
-| `colW`, `rowH`, `nodeW`, `top` | Grid tuning; defaults 215 / 122 / 156 / 30 (78 when an edge arcs over the first row) |
+| `colW`, `rowH`, `nodeW`, `top` | Grid tuning; defaults: `colW` 215, widened to fit the longest label between two neighbours in a row; `rowH` 122; `nodeW` 156; `top` 30 (78 when an edge arcs over the first row) |
 
-`facts`, `callout`, `footer` and `titlePrefix` are no longer shown; the linter says where
-their content belongs.
+`facts`, `callout`, `footer`, `titlePrefix` and the `ui` keys `outSub`, `basicsSub`, `mapSub`
+are no longer shown; the linter says where their content belongs.
 
 ## Nodes
 
@@ -136,21 +137,45 @@ When nothing could be checked, everything is `gen` and the tag stops carrying si
 the riskiest payloads if you can browse (and tag them `doc`), mark individually shaky fields
 with a `//` comment, and say in `lead` that the page is unverified and what to check first.
 
+## Embedding
+
+Set `embed:true` (or open the page as `page.html?embed=1`) to show it inside another page,
+e.g. an iframe in a training site. The page then:
+
+- drops its top bar, eyebrow and theme button, its background and its side padding, so the
+  host's own heading and frame carry it;
+- takes its theme from the host instead of the reader's saved choice (a `srcdoc` frame shares
+  the host's storage): `?theme=light|dark` up front, then `postMessage({theme:'light'|'dark'|'auto'})`
+  from the host whenever the host switches;
+- reports its height to the host after every resize, so the iframe needs no scrollbar:
+
+```js
+addEventListener('message', e => {
+  if (e.data?.type === 'lifecycle-diagram:height' && e.source === frame.contentWindow) frame.style.height = e.data.height + 'px';
+});
+```
+
 ## Layout
 
 Placement is automatic; fields you set always win over it.
 
 - A node without `row` takes the row of its kind: `start`/`main`/`ok` row 0, `side`/`exc`
   row 1, `cancel`/`ret` row 2 (unused rows close up when no `rows` labels are given).
-- A node without `col` follows the edges (`back` edges ignored): the main row runs left to
-  right in path order; a node in another row sits half a column right of its one source, or
-  centred under several. Auto-placed boxes in one row are pushed apart so they never overlap.
-- An edge without sides leaves right/down/up toward its target; a same-row edge that skips a
-  column or runs backwards arcs over the row (under it, below the first row), and `top`
-  grows to make room. Two opposite edges between the same states run side by side.
+- A node without `col` follows the edges: the main row runs left to right along the longest
+  path from the start, so a shortcut (an edge that skips states) never reorders it. `back`
+  edges are ignored, and so is any edge that closes a loop (the walk follows the longest
+  scenario first), even if it is not marked `back`. A node in another row sits half a column
+  right of its one source, or centred under several; auto-placed boxes in one row are pushed
+  apart so they never overlap.
+- An edge without sides runs straight between neighbours in a row (either direction) and
+  right/down/up between rows. Only a same-row edge with a box in the way arcs: over the first
+  row (`top` grows to make room), under any other row (the canvas grows to fit). Two opposite
+  edges between the same states run side by side with their labels on the outside.
 
 So adding a status is one `nodes` entry plus its `edges`. Start without positions, check,
-then pin only what the linter or a screenshot flags. The rules below are for that pinning.
+then pin only what the linter or a screenshot flags. Besides boxes, lines and labels that
+overlap or touch, the linter flags anything cut off at the top or left, and a main row that
+does not follow the longest scenario. The rules below are for that pinning.
 
 - **Rows carry meaning**: row 0 is the main path left to right; row 1 holds side states and
   exceptions, placed between the states they belong to (often at `.5` columns); lower rows

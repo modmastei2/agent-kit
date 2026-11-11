@@ -1,6 +1,6 @@
 ---
 name: lifecycle-diagram
-version: 2.0.0
+version: 2.1.0
 description: Build an interactive, self-contained HTML page explaining the lifecycle (state machine) of one entity — every status it can be in, how it moves between them, every way it can end, what each status means, and the API calls, events and payloads an integrator deals with at each step. Use whenever someone wants to see, explain, document or compare a status flow — of orders, payments, refunds, shipments, subscriptions, tickets, work items, deployments, approvals, accounts or any other entity with statuses — even if they don't ask for HTML or a diagram. Also use it to compare one lifecycle across several providers (one linked page per provider).
 ---
 
@@ -12,7 +12,8 @@ thing the user receives. The page has:
 - a short header (eyebrow, name, at most a one-sentence lead) and no filler around it;
 - a **diagram**: statuses as boxes in semantic rows (main path / side states / failure and
   reversal branches), transitions as arrows, terminal states marked, and an optional
-  per-status side effect shown as a coloured dot;
+  per-status side effect shown as a coloured dot, with a legend row above it for the line
+  styles, box frames and dots the page uses;
 - **scenario** buttons that light up a full path (and can walk it step by step), and
   click-to-focus on any status, which lights it, its neighbours and the lines between them
   without scrolling the page;
@@ -59,8 +60,9 @@ The data file is scaffolding, not output.
 Settle (ask only what cannot be inferred): the **entity and the level its status lives at**
 (say so on the page when surprising, e.g. per item rather than per order, or derived from
 several objects); **one page or one per provider** (sibling pages link via `nav`); the
-**audience** (integrators need events/calls/basics; for an internal workflow drop them); and
-the **output location**, following the user's folder conventions.
+**audience** (integrators need events/calls/basics; for an internal workflow drop them); the
+**output location**, following the user's folder conventions; and whether it will be
+**embedded** in another page (`embed`, see the schema).
 
 ### 2. Research and model
 
