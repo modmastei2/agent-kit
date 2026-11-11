@@ -12,32 +12,36 @@ window.DATA = (function(){
 
 It is a working file: keep it in the work dir (`build.mjs --workdir <name>`), never next to
 the page. A built page embeds it, and `build.mjs <page.html> --extract <data.js>` gets it back.
+The embedded block can also be edited in the page itself: add a node and its edges, reload.
 
 Fields marked * are required. Fields marked html accept HTML; everything else is escaped.
-Write every human-readable field in the reader's language.
+Write every human-readable field in the reader's language, in plain words; keep raw values,
+codes and proper names verbatim. No emoji or symbol glyphs (the linter warns): the template
+draws its own icons.
 
 ## Page
 
 | Field | Notes |
 |---|---|
-| `name`* | Subject of the page, shown large in the accent colour |
+| `name`* | Subject of the page, the heading |
 | `title` | Browser tab title; defaults to `name` |
-| `titlePrefix` | Text before `name` in the heading (default `Lifecycle · `) |
+| `eyebrow` | Small label above the heading (default `ui.eyebrow`, `Lifecycle`) |
 | `lang` | `<html lang>` (default `en`) — set it to the page's language |
-| `accent` | `{light, dark}` hex colours; `dark` is a lighter tint for dark mode |
-| `lead` (html) | One or two sentences: what one "thing" is, plus the single most surprising fact |
-| `facts` | `[{k, v(html)}]` — 4–6 quick facts: where status lives, base URL, cost of a detail read, event ack deadline, limits |
-| `callout` (html) | The top trap, starting with ⚠ |
+| `accent` | `{light, dark}` hex colours for links, the start node and tags; `dark` is a lighter tint |
+| `lead` (html) | Optional, one sentence: what one "thing" is, or the one trap to know before reading the diagram, or that the page is unverified. Everything else goes on the status it concerns |
 | `crumb`, `nav` | Breadcrumb text and `[{label, href, current}]` links to sibling pages (relative) |
 | `rows` | Label per diagram row, top to bottom |
 | `effects` | `{key: {label, tone}}` — optional side effect per status, shown as a dot; tone ∈ blue, green, gray, amber, red, purple |
 | `actors` | `{key: label}` — labels for `who`; there are no built-ins |
-| `ui` | Overrides for built-in labels (see the `UI` object at the top of the template script), e.g. `outTitle`, `apis`, `webhook`, `basicsTitle`, `mapTitle`, `mapSub` (html), `mappedLabel`, `effectLabel`, `legend:{main,cancel,ret,exc,back}`, `kinds:{…}` |
-| `tags`, `tagDesc` | Overrides for tag labels and their footer descriptions |
-| `basics` | `[{title, tag, body(html), code, codeLabel}]` — "before your first API call" cards; omit to hide |
-| `mapTable` | `false` hides the raw → mapped table |
-| `sources` (html list), `footer` (html) | Provenance shown in the footer |
-| `colW`, `rowH`, `nodeW`, `top` | Grid tuning; defaults 215 / 122 / 156 / 26 |
+| `ui` | Overrides for built-in labels (see the `UI` object at the top of the template script), e.g. `eyebrow`, `outTitle`, `noPath`, `apis`, `webhook`, `basicsTitle`, `mapTitle`, `mappedLabel`, `effectLabel`, `legend:{main,cancel,ret,exc,back}`, `kinds:{…}` |
+| `tags`, `tagDesc` | Overrides for tag labels and their descriptions in the footer |
+| `basics` | `[{title, tag, body(html), code, codeLabel}]` — "before your first call" cards; omit to hide |
+| `mapTable` | `false` hides the status table |
+| `sources` (html list) | Provenance, folded away in the footer |
+| `colW`, `rowH`, `nodeW`, `top` | Grid tuning; defaults 215 / 122 / 156 / 30 (78 when an edge arcs over the first row) |
+
+`facts`, `callout`, `footer` and `titlePrefix` are no longer shown; the linter says where
+their content belongs.
 
 ## Nodes
 
@@ -53,7 +57,7 @@ Write every human-readable field in the reader's language.
 | `raw`* | The exact value(s) the source system uses — shown in full in the panel |
 | `code` | Text in the box when `raw` is long (~18 monospace chars fit at default width) or ambiguous across objects (`refund: succeeded`) |
 | `short` | Short human meaning, the box's second line (`th` is accepted as a pre-1.0 alias) |
-| `col`*, `row`* | Grid position; `col` may be fractional |
+| `col`, `row` | Grid position, `col` may be fractional. Leave them out for automatic placement (see Layout); set one only to pin a node |
 | `w` | Box width override |
 | `kind` | `start` · `main` (default) · `side` (dashed: sub-state or signal outside the main enum) · `ok` (success end) · `cancel` (cancel / failure) · `ret` (reversal: return, refund, rollback) · `exc` (exception, e.g. delivery or infrastructure level) |
 | `end` | Force the END badge. Default: `ok`/`cancel` nodes without a non-`back` outgoing edge. Set it on a state that ends the main object but still points into a related object, and on terminal `ret` nodes |
@@ -94,7 +98,7 @@ comments (preceded by a space) render as comments.
 | `kind` | `main` (default) · `cancel` · `ret` · `exc` (dashed) · `back` (dotted: loop back, rejection, retry) |
 | `label` | Short text on the canvas |
 | `why` | Full reason, shown in the detail panel |
-| `fs`, `ts` | Exit / entry side: `t` `b` `l` `r` (default from relative position) |
+| `fs`, `ts` | Exit / entry side: `t` `b` `l` `r` (default from relative position; see Layout) |
 | `fo`, `to_` | Pixel offset of the exit / entry point along its side |
 | `k` | Control distance — larger leaves straighter before bending |
 | `lx`, `ly` | Label nudge in pixels |
@@ -105,7 +109,8 @@ comments (preceded by a space) render as comments.
 { id:'cancel', tone:'cancel', label:'Cancelled', path:['BACKLOG','READY','CANCELLED'], desc:'…html…' }
 ```
 
-`tone` ∈ ok, cancel, ret, exc. Each consecutive pair in `path` should be an edge (the linter
+Each outcome is a scenario button that lights its path; `tone` ∈ ok, cancel, ret, exc picks its
+icon and colour. Each consecutive pair in `path` should be an edge (the linter
 warns otherwise); a node may repeat, e.g. a rework loop.
 
 ## Modelling beyond plain statuses
@@ -129,10 +134,23 @@ warns otherwise); a node may repeat, e.g. a rework loop.
 
 When nothing could be checked, everything is `gen` and the tag stops carrying signal: verify
 the riskiest payloads if you can browse (and tag them `doc`), mark individually shaky fields
-with a `//` comment, and say in `lead` or `footer` that the page is unverified and what to
-check first.
+with a `//` comment, and say in `lead` that the page is unverified and what to check first.
 
 ## Layout
+
+Placement is automatic; fields you set always win over it.
+
+- A node without `row` takes the row of its kind: `start`/`main`/`ok` row 0, `side`/`exc`
+  row 1, `cancel`/`ret` row 2 (unused rows close up when no `rows` labels are given).
+- A node without `col` follows the edges (`back` edges ignored): the main row runs left to
+  right in path order; a node in another row sits half a column right of its one source, or
+  centred under several. Auto-placed boxes in one row are pushed apart so they never overlap.
+- An edge without sides leaves right/down/up toward its target; a same-row edge that skips a
+  column or runs backwards arcs over the row (under it, below the first row), and `top`
+  grows to make room. Two opposite edges between the same states run side by side.
+
+So adding a status is one `nodes` entry plus its `edges`. Start without positions, check,
+then pin only what the linter or a screenshot flags. The rules below are for that pinning.
 
 - **Rows carry meaning**: row 0 is the main path left to right; row 1 holds side states and
   exceptions, placed between the states they belong to (often at `.5` columns); lower rows
@@ -143,9 +161,8 @@ check first.
 - A state that many others can reach (a shared cancel state) reads best under the middle of
   its sources. Edges arriving from far away read better entering from the side along their
   own row (`fs:'b', ts:'l'` or `ts:'r'`, with a large `k`) than cutting diagonally across rows.
-- Opposite edges between stacked nodes: offset them (`fo`/`to_` ±30) so they don't overlap.
-- **Jumping ahead in the same row**: arc over the top with `fs:'t', ts:'t'`, raise `top`
-  (70–90) for room, and vary `k`/`fo` so several arcs nest instead of crossing.
+- Opposite edges with sides you set yourself: offset them (`fo`/`to_` ±30) so they don't overlap.
+- **Several arcs over the same row**: vary `k`/`fo` so they nest instead of crossing.
 - **Density**: past ~20 edges or ~6 crossings (the linter prints the count) the diagram stops
   being readable. Drop edges that are implied or rare and carry them in a `why` or a pitfall;
   prefer one representative edge into a shared terminal over one from every source.

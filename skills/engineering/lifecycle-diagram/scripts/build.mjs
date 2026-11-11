@@ -98,7 +98,7 @@ for (const n of D.nodes) {
   else if (ids.has(n.id)) errors.push(`duplicate node id "${n.id}"`);
   ids.add(n.id);
   if (n.raw == null) errors.push(`node "${n.id}" has no raw`);
-  if (typeof n.col !== 'number' || typeof n.row !== 'number') errors.push(`node "${n.id}" needs numeric col and row`);
+  for (const k of ['col', 'row']) if (n[k] != null && typeof n[k] !== 'number') errors.push(`node "${n.id}" ${k} must be a number (or left out for automatic placement)`);
   if (n.kind && !KINDS.includes(n.kind)) errors.push(`node "${n.id}" kind "${n.kind}" not one of ${KINDS.join('/')}`);
   if (n.effect && !(D.effects && D.effects[n.effect])) errors.push(`node "${n.id}" effect "${n.effect}" missing from DATA.effects`);
 }
@@ -113,7 +113,16 @@ for (const o of D.outcomes || []) {
     if (!D.edges.some(e => e.from === o.path[i] && e.to === o.path[i + 1]))
       warns.push(`outcome "${o.id}": no edge ${o.path[i]} → ${o.path[i + 1]} (step will not highlight)`);
 }
-if (!D.accent) warns.push('no DATA.accent — using default blue');
+if (!D.accent) warns.push('no DATA.accent — using the default green');
+// fields earlier versions showed; the page now keeps its header and footer short
+const GONE = { facts: 'put a fact that matters in lead or in a status desc', callout: 'move the trap into lead or the gotchas of the status it belongs to', footer: 'say what is unverified in lead; sources go in sources', titlePrefix: 'use eyebrow' };
+for (const [k, how] of Object.entries(GONE)) if (D[k] != null) warns.push(`DATA.${k} is no longer shown — ${how}`);
+// icons come from the template (Lucide); emoji and symbol glyphs in the text render inconsistently
+const GLYPH = /[☀-➿■-◿⬀-⯿🀀-🫿]/u;
+const texts = [['lead', D.lead], ...D.nodes.flatMap(n => [[`node ${n.id}`, n.short], [`node ${n.id} desc`, n.desc], ...(n.gotchas || []).map(g => [`node ${n.id} gotcha`, g])]),
+  ...D.edges.flatMap(e => [[`edge ${e.from}→${e.to}`, e.label], [`edge ${e.from}→${e.to} why`, e.why]]),
+  ...(D.outcomes || []).flatMap(o => [[`outcome ${o.id}`, o.label], [`outcome ${o.id} desc`, o.desc]])];
+for (const [where, t] of texts) if (t && GLYPH.test(String(t))) warns.push(`${where}: emoji or symbol glyph "${String(t).match(GLYPH)[0]}" — drop it; the page draws its own icons`);
 
 /* ---- layout lint (same geometry as the browser) ---- */
 if (!errors.length) {
@@ -174,11 +183,11 @@ if (checkOnly) { console.log(warns.length ? `${warns.length} warning(s)` : 'clea
 /* ---- render ---- */
 function soft(hex, a) {
   const m = /^#?([0-9a-f]{6})$/i.exec(hex || '');
-  if (!m) return `rgba(36,67,201,${a})`;
+  if (!m) return `rgba(31,122,92,${a})`;
   const v = parseInt(m[1], 16);
   return `rgba(${v >> 16},${(v >> 8) & 255},${v & 255},${a})`;
 }
-const light = D.accent?.light || '#2443c9', dark = D.accent?.dark || '#8ea6ff';
+const light = D.accent?.light || '#1f7a5c', dark = D.accent?.dark || '#4cc79c';
 const escAttr = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;');
 const html = fs.readFileSync(path.join(assets, 'template.html'), 'utf8')
   .replace('__LANG__', D.lang || 'en')

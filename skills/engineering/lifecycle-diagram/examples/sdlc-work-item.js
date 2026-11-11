@@ -97,15 +97,7 @@ ${HDRS}
 return {
 name:'SDLC work item', title:'SDLC Work Item Lifecycle', lang:'en',
 accent:{light:'#0b7a75', dark:'#5fd1c8'},
-lead:'One "thing" = <b>one work item</b>: a GitHub issue, the pull request that implements it, and the deployments that ship it. No single API field holds this status — it is <b>derived</b> from three objects.',
-facts:[
-  {k:'Status lives on', v:'issue + PR + deployment'},
-  {k:'API base', v:'<code>api.github.com</code>'},
-  {k:'Webhook ack', v:'2xx within ~10 s'},
-  {k:'Rate limit', v:'5,000 req/h per token'},
-  {k:'Done means', v:'running in production'}
-],
-callout:'⚠ <b>Closed ≠ done.</b> A cancelled item is also <code>state: closed</code> — read <code>state_reason</code>. And a merged PR is not released: only a successful production deployment is.',
+lead:'One work item is a GitHub issue, the pull request that builds it and the deployments that ship it, so no single field holds its status. A cancelled item is also <code>state: closed</code> (read <code>state_reason</code>), and a merged PR is not done until it runs in production.',
 rows:['DELIVERY','REWORK · SIDE STATES','CANCELLED · INCIDENT'],
 top:70,
 effects:{
@@ -195,7 +187,6 @@ basics:[
  {title:'Reconcile', tag:'gen', body:'<p>Webhooks can be missed. Periodically list issues and PRs with <code>since=&lt;last sync&gt;</code>, and redeliver failed hook deliveries from the hook\'s delivery log.</p>'},
  {title:'Rate limits', tag:'gen', body:'<p>Watch <code>x-ratelimit-remaining</code> / <code>x-ratelimit-reset</code>; secondary limits return 403 or 429 with <code>retry-after</code>.</p>'}
 ],
-ui:{mapSub:'"Maps to" is the board column a team might derive from the raw signals.'},
 sources:['Illustrative example bundled with the lifecycle-diagram skill — GitHub REST API from general knowledge, not checked against current docs.']
 };
 })();
