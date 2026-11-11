@@ -117,6 +117,7 @@ if (!D.accent) warns.push('no DATA.accent — using the default green');
 // fields earlier versions showed; the page now keeps its header and footer short
 const GONE = { facts: 'put a fact that matters in lead or in a status desc', callout: 'move the trap into lead or the gotchas of the status it belongs to', footer: 'say what is unverified in lead; sources go in sources', titlePrefix: 'use eyebrow' };
 for (const [k, how] of Object.entries(GONE)) if (D[k] != null) warns.push(`DATA.${k} is no longer shown — ${how}`);
+for (const k of ['outSub', 'basicsSub', 'mapSub', 'titlePrefix']) if (D.ui && D.ui[k] != null) warns.push(`ui.${k} is no longer shown — remove it`);
 // icons come from the template (Lucide); emoji and symbol glyphs in the text render inconsistently
 const GLYPH = /[☀-➿■-◿⬀-⯿🀀-🫿]/u;
 const texts = [['lead', D.lead], ...D.nodes.flatMap(n => [[`node ${n.id}`, n.short], [`node ${n.id} desc`, n.desc], ...(n.gotchas || []).map(g => [`node ${n.id} gotcha`, g])]),
@@ -152,14 +153,27 @@ if (!errors.length) {
     }
     for (const id of hit) warns.push(`edge ${e.from} → ${e.to} passes through node ${id}`);
     const poly = []; for (let t = 0; t <= 1.0001; t += 0.05) poly.push(g.at(t));
+    // the canvas grows right and down to fit; only the top and left edges can cut a line off
+    if (poly.some(q => q[0] < 2 || q[1] < 2)) warns.push(`edge ${e.from} → ${e.to} runs off the top or left of the diagram — raise top or set its sides (fs/ts)`);
     polys.push({ e, poly });
     if (e.label) {
       const w = L.labelWidth(e.label);
       const lb = { x: g.mx - w / 2, y: g.my - 7, w, h: 14, name: `"${e.label}" (${e.from}→${e.to})` };
       for (const r of rects) if (overlap(lb, r)) warns.push(`label ${lb.name} overlaps node ${r.id} — shorten it, move it (lx/ly) or widen colW`);
-      for (const o of labels) if (overlap(lb, o)) warns.push(`label ${lb.name} overlaps label ${o.name}`);
+      if (lb.x < 0 || lb.y < 0) warns.push(`label ${lb.name} is cut off at the top or left — move it (lx/ly) or raise top`);
+      // labels closer than a few pixels read as one; count that as overlapping
+      const near = { x: lb.x - 3, y: lb.y - 2, w: lb.w + 6, h: lb.h + 4 };
+      for (const o of labels) if (overlap(near, o)) warns.push(`label ${lb.name} overlaps or touches label ${o.name} — move one (lx/ly) or shorten it`);
       labels.push(lb);
     }
+  }
+  // the main row should read in the order of the longest scenario
+  const longest = [...(D.outcomes || [])].sort((a, b) => (b.path || []).length - (a.path || []).length)[0];
+  if (longest) {
+    const top = Math.min(...D.nodes.map(n => n.row)), seen = [];
+    for (const id of longest.path) if (L.byId[id]?.row === top && !seen.includes(id)) seen.push(id);
+    for (let i = 1; i < seen.length; i++)
+      if (L.byId[seen[i]].col <= L.byId[seen[i - 1]].col) { warns.push(`main row is out of order: scenario "${longest.id}" goes ${seen[i - 1]} → ${seen[i]}, but ${seen[i]} is not to the right — set col, or check that edge's kind`); break; }
   }
   // edge crossings: not an error, but the number to drive down when the diagram looks tangled
   const segX = (a, b, c, d) => { const o = (p, q, r) => Math.sign((q[0]-p[0])*(r[1]-p[1]) - (q[1]-p[1])*(r[0]-p[0])); return o(a,b,c) * o(a,b,d) < 0 && o(c,d,a) * o(c,d,b) < 0; };
